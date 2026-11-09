@@ -4,8 +4,9 @@ All notebooks use a small subset of the [Yelp Open Dataset](https://yelp.com/dat
 the McDonald's and IKEA locations and all reviews of the IKEA locations.
 
 **The data files are not in this repository.** The Yelp terms do not allow publishing
-the data. Download `llm_fundamentals_data.zip` from Moodle, put it into this folder and
-unpack it here; the steps are in the main [README](../README.md#data).
+the data. Download `llm_fundamentals_data.zip` from Moodle and put it into this folder;
+the first cells of `01_Explore_Yelp_Data` unpack it here. The steps are in the main
+[README](../README.md#data).
 Git ignores the files, so they are never pushed to GitHub.
 
 ## Files

@@ -9,7 +9,8 @@ fi
 if [ -f data/ikea_reviews.csv ]; then
     echo "Data found."
 else
-    echo "Data missing: download llm_fundamentals_data.zip from Moodle. See README.md, section 'Data'."
+    echo "Data missing: download llm_fundamentals_data.zip from Moodle, drag it onto the folder data"
+    echo "and run the first cells of 01_Explore_Yelp_Data. See README.md, section 'Data'."
 fi
 
 if [ -n "${OPENAI_API_KEY:-}" ]; then

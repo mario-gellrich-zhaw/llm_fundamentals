@@ -52,11 +52,9 @@ so it is **not in this repository**. You get it on Moodle.
 1. Download `llm_fundamentals_data.zip` from Moodle (Week 10).
 2. In your codespace, drag the zip file from your computer into the file Explorer, onto
    the folder `data`.
-3. In the terminal, run:
-
-   ```bash
-   python -m zipfile -e data/llm_fundamentals_data.zip data
-   ```
+3. Open [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb)
+   and run the cells up to **Unzip the data**. The notebook checks that the zip file is
+   there, unpacks it into `data/`, and tells you what to do if it is missing.
 
 The files land in `data/`. Git ignores them, so they never end up on GitHub, even if you
 commit and push your work. [data/README.md](data/README.md) describes every column.
@@ -133,7 +131,7 @@ llm_fundamentals/
 
 | File | Purpose |
 |---|---|
-| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. No API calls. |
+| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`, then exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up questions, message history, token counting with `tiktoken`, cost estimate for all IKEA reviews, comparison with the usage the API reports. |
 | `03_Classify_Reviews/classify_reviews.ipynb` | Sentiment classification of 200 reviews: silver labels from `gpt-6-luna` with high reasoning effort, vague vs. precise prompt with JSON schema, accuracy and confusion matrix, consistency over 5 runs, robustness on irony and mixed reviews, meta prompting. Then prompt injection: two attacks against an undefended prompt, the precise prompt, fixed choices (Decisions API) and fixed choices with a defence. Saves `data/processed/silver_labels.csv`. |
 | `04_Mini_RAG/mini_rag.ipynb` | Duplicate check, hybrid retrieval (BM25 + E5 + reciprocal rank fusion), answers with cited review IDs, check of every claim, and an example of a faithful but false answer. |
