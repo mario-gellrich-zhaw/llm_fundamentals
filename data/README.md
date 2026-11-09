@@ -15,8 +15,12 @@ Git ignores the files, so they are never pushed to GitHub.
 | `businesses_mcdonalds_ikea.csv` | 716 | One row per location: 708 McDonald's, 8 IKEA (6 stores and 2 store restaurants) |
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
-| `raw/` | – | Place for the full Yelp files if you want to rebuild the subset (ignored by git) |
-| `processed/` | – | Files the notebooks write, e.g. `silver_labels.csv` (ignored by git) |
+| `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
+| `processed/silver_labels.csv` | 200 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
+| `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
+
+All of these are ignored by git; only this README and the empty folders `raw/` and
+`processed/` are in the repository.
 
 ### `businesses_mcdonalds_ikea.csv`
 
@@ -40,6 +44,22 @@ Git ignores the files, so they are never pushed to GitHub.
 | `date` | Date and time of the review (UTC) |
 | `text` | Full review text, original spelling |
 
+4 review texts appear more than once (9 rows); `04_Mini_RAG` removes the duplicates
+before indexing.
+
+### `fewshot_examples.json`
+
+A list of 3 examples, each with `text` (review), `yelp_stars`, `sentiment` (our label),
+`aspects` (our labels per aspect) and `note`. `03_Classify_Reviews` uses `text` and
+`sentiment`.
+
+### `processed/silver_labels.csv`
+
+| Column | Meaning |
+|---|---|
+| `review_id` | Yelp ID of the review |
+| `silver` | Silver label from `gpt-6-luna` with high reasoning effort: `positive`, `negative` or `mixed` |
+
 ## How the subset was selected
 
 - McDonald's: business name exactly `McDonald's` or `McDonalds` (case-insensitive).
@@ -49,13 +69,19 @@ Git ignores the files, so they are never pushed to GitHub.
 The `review_count` in the business file (1,688 for IKEA) is not the same as the number of
 rows in the review file (1,743).
 
-To rebuild the subset from the full data set (Parquet copy on Hugging Face:
-`yashraizad/yelp-open-dataset-business`, `yashraizad/yelp-open-dataset-reviews`):
+To recompute the numbers shown in the lecture from the files in `data/`:
+
+```bash
+python scripts/reproduce_slide_numbers.py
+```
+
+For the lecturer only: to rebuild the subset from the full data set (Parquet copy on
+Hugging Face: `yashraizad/yelp-open-dataset-business`, `yashraizad/yelp-open-dataset-reviews`),
+save the two files in `data/raw/` and run:
 
 ```bash
 pip install pyarrow
 python scripts/prepare_data.py --business data/raw/business.parquet --reviews data/raw/review.parquet
-python scripts/reproduce_slide_numbers.py
 ```
 
 ## Licence

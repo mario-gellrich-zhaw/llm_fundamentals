@@ -75,7 +75,7 @@ Rules for the data:
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, guess and then compute the cost of classifying all reviews | 10 min, together |
 | `03_Classify_Reviews` | `classify_reviews.ipynb` | Create silver labels, compare a vague and a precise prompt, measure correctness, consistency and robustness, improve with meta prompting; then attack your own classifier with prompt injection and defend it | 25 + 10 min, in class |
 | `04_Mini_RAG` | `mini_rag.ipynb` | Index all reviews with BM25 and E5, retrieve, answer with citations, check every claim | 25 min, in class |
-| `05_Local_Model` | `local_model.ipynb` | Run a local model with Ollama and compare quality, speed and cost with the API model | about 30 min, at home |
+| `05_Local_Model` | `local_model.ipynb` | Run a local model with Ollama and compare accuracy, speed and cost with the API model | about 30 min, at home |
 
 `01_Explore_Yelp_Data` needs no API key. Run the notebooks in this order:
 `05_Local_Model` uses the silver labels created in `03_Classify_Reviews`.
@@ -105,8 +105,6 @@ llm_fundamentals/
 │   ├── fewshot_examples.json           (from Moodle)
 │   ├── raw/                  Full Yelp files (not in git)
 │   └── processed/            Files the notebooks write (not in git)
-├── slides/                   Lecture slides
-│   └── Slides_MSC_Data_Science_Week_10_EN_barrierefrei.pptx
 ├── scripts/                  Data preparation (for the lecturer)
 │   ├── prepare_data.py
 │   └── reproduce_slide_numbers.py
@@ -137,9 +135,9 @@ llm_fundamentals/
 |---|---|
 | `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up questions, message history, token counting with `tiktoken`, cost estimate for all IKEA reviews, comparison with the usage the API reports. |
-| `03_Classify_Reviews/classify_reviews.ipynb` | Sentiment classification of 200 reviews: silver labels from `gpt-6-luna` with high reasoning effort, vague vs. precise prompt with JSON schema, accuracy and F1, consistency over 5 runs, robustness on irony and mixed reviews, meta prompting. Then prompt injection: two attacks against an undefended prompt, the precise prompt and fixed choices (Decisions API), and a defence. Saves `data/processed/silver_labels.csv`. |
+| `03_Classify_Reviews/classify_reviews.ipynb` | Sentiment classification of 200 reviews: silver labels from `gpt-6-luna` with high reasoning effort, vague vs. precise prompt with JSON schema, accuracy and confusion matrix, consistency over 5 runs, robustness on irony and mixed reviews, meta prompting. Then prompt injection: two attacks against an undefended prompt, the precise prompt, fixed choices (Decisions API) and fixed choices with a defence. Saves `data/processed/silver_labels.csv`. |
 | `04_Mini_RAG/mini_rag.ipynb` | Duplicate check, hybrid retrieval (BM25 + E5 + reciprocal rank fusion), answers with cited review IDs, check of every claim, and an example of a faithful but false answer. |
-| `05_Local_Model/local_model.ipynb` | Starts Ollama, downloads a small open-weight model, points the OpenAI client to `localhost:11434/v1`, classifies 20 reviews with both models and compares accuracy, speed and cost. |
+| `05_Local_Model/local_model.ipynb` | Starts Ollama, downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI client to `localhost:11434/v1`, classifies 20 reviews with the same one-word prompt on both models and compares accuracy, seconds per review and API cost. |
 
 ### `data/`: Yelp subset
 
@@ -179,16 +177,10 @@ through two small functions, because all students share one key.
 |---|---|
 | `.env.example` | Template for a local `.env` file with `OPENAI_API_KEY`. Only needed outside Codespaces. |
 | `.gitattributes` | Keeps Linux line endings for scripts and notebooks, so they also run when edited on Windows. |
-| `.gitignore` | Keeps the key (`.env`), the answer cache (`.cache/`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), files the notebooks write and Python temporary files out of git. |
+| `.gitignore` | Keeps the key (`.env`), the answer cache (`.cache/`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
 | `pyproject.toml` | Describes the helper package `llm_course` so that it can be installed with `pip install -e .`. |
 | `requirements.txt` | Python packages: `openai`, `tiktoken`, `pandas`, `scikit-learn`, `rank-bm25`, `sentence-transformers` (with CPU-only PyTorch), Jupyter and others. |
 | `README.md` | This file. |
-
-### `slides/`: lecture slides
-
-| File | Purpose |
-|---|---|
-| `Slides_MSC_Data_Science_Week_10_EN_barrierefrei.pptx` | Lecture slides for Week 10. |
 
 Files created while you work, all ignored by git:
 
