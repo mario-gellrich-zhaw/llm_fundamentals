@@ -51,11 +51,11 @@ so it is **not in this repository**. You get it on Moodle.
 
 1. Download `llm_fundamentals_data.zip` from Moodle (Week 10).
 2. In your codespace, drag the zip file from your computer into the file Explorer, onto
-   the top folder `llm_fundamentals`.
+   the folder `data`.
 3. In the terminal, run:
 
    ```bash
-   python -m zipfile -e llm_fundamentals_data.zip .
+   python -m zipfile -e data/llm_fundamentals_data.zip data
    ```
 
 The files land in `data/`. Git ignores them, so they never end up on GitHub, even if you
