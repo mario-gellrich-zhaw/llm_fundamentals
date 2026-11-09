@@ -1,0 +1,7 @@
+# Shell scripts must keep LF line endings, or they fail inside the Linux container.
+*.sh text eol=lf
+*.py text eol=lf
+*.ipynb text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.pptx binary

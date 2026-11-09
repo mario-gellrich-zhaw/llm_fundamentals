@@ -1,0 +1,55 @@
+{
+    "name": "LLM Fundamentals (Python 3.11, Jupyter, Ollama)",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+    // The course key is stored as a Codespaces secret, never in the repo.
+    // Codespaces asks for it when a codespace is created without it.
+    "secrets": {
+        "OPENAI_API_KEY": {
+            "description": "Course API key (provided by the lecturer). Do not print, copy or share it."
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "ms-python.autopep8",
+                "ms-python.pylint",
+                "analytic-signal.preview-pdf",
+                "grapecity.gc-excelviewer",
+                "mechatroner.rainbow-csv",
+                "github.copilot",
+                "github.copilot-chat",
+                "openai.chatgpt"
+            ],
+            "settings": {
+                "workbench.colorTheme": "Default Dark+",
+                "workbench.iconTheme": "vs-seti",
+                "editor.rulers": [80],
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "files.exclude": {
+                    "**/__pycache__": true,
+                    "**/*.egg-info": true
+                }
+            }
+        },
+        "codespaces": {
+            "openFiles": [
+                "README.md",
+                "01_Explore_Yelp_Data/explore_yelp_data.ipynb"
+            ]
+        }
+    },
+
+    // Ollama listens here (exercise 4).
+    "forwardPorts": [11434],
+    "portsAttributes": {
+        "11434": { "label": "Ollama", "onAutoForward": "silent" }
+    },
+
+    "postCreateCommand": "bash .devcontainer/post_create.sh",
+    "postStartCommand": "bash .devcontainer/post_start.sh"
+}
