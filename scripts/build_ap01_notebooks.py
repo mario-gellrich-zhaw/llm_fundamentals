@@ -523,7 +523,7 @@ def build_concept_checks():
     cells = [md('# Ergänzende Lernkontrolle: Large Language Models\n\nNicht bewertet. Die Fragen ergänzen die Übungsprüfung um die übrigen Themen der Vorlesung; alle sind ohne Code und ohne API lösbar. Die Antworten sind Vorschläge zur Selbstkontrolle und keine Rechtsauskunft.')]
     for title, question, answer in CONCEPT_CHECKS:
         cells += [md('## ' + title + '\n\n' + question),
-                  md('<details><summary>Antwortvorschlag</summary>\n\n' + answer + '\n\n</details>')]
+                  md('<details><summary style="color: #B8860B;">Antwortvorschlag</summary>\n\n' + answer + '\n\n</details>')]
     return {'cells': cells, 'metadata': {'kernelspec': {'display_name': 'Python 3', 'language': 'python', 'name': 'python3'}, 'language_info': {'name': 'python'}}, 'nbformat': 4, 'nbformat_minor': 5}
 
 

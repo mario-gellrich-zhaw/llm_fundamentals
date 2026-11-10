@@ -159,11 +159,11 @@ the outputs before you share a notebook.
 
 | Folder | Notebook | What you do | Time | First run |
 |---|---|---|---|---|
-| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare McDonald's and IKEA ratings, explore the IKEA reviews, prepare an anonymized sample of 500 reviews | 15 min | under 1 min |
+| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, inspect review bias, read three examples and prepare an anonymized sample of 500 reviews | 10–15 min, plus self-check | under 1 min |
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compute the cost of reading all reviews, see what reasoning costs | 10 min, together | under 1 min |
-| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 100 reviews, compare a vague and a precise prompt, measure correctness, consistency and robustness, improve the prompt; then attack your own classifier with prompt injection and defend it | 25 + 10 min, in class | about 3 min |
-| `04_Mini_RAG` | `mini_rag.ipynb` | Search 500 reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check the answer | 25 min, in class | about 2 min |
-| `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 20 reviews | 15 min, at home | about 2 min + model download |
+| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 50 reviews, compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
+| `04_Mini_RAG` | `mini_rag.ipynb` | Search 500 reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
+| `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews | 15 min, at home | about 2 min + model download |
 | `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
 | `06_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
 
@@ -173,8 +173,8 @@ because answers of the model are saved in `.cache/`.
 **How the notebooks keep it simple and fast**
 
 - Every step starts with **one example** (one review, one request) before it is applied to many.
-- The API notebooks use **small samples**: 500 anonymized reviews in total, 100 for
-  classification, 20 for the model comparison.
+- The API notebooks use **small samples**: 500 anonymized reviews in total, 50 for
+  classification, 10 for the model comparison.
 - Normal requests use **low reasoning effort**; only the silver labels use high effort.
   The local model answers without thinking by default.
 
@@ -244,11 +244,11 @@ llm_fundamentals/
 
 | File | Purpose |
 |---|---|
-| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
-| `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA reviews, context window, usage reported by the API, low vs. high reasoning effort. About 12 small API calls. |
-| `03_Classify_Reviews/classify_reviews.ipynb` | Sentiment of 100 reviews (20 per star rating): one review as free text and with a JSON schema, silver labels from `gpt-6-luna` with high reasoning effort, development and test set, vague vs. precise prompt with few-shot examples, accuracy and confusion matrix, consistency over 5 runs, hard cases, meta prompting. Then prompt injection: two attacks against four classifiers, including fixed choices (Decisions API). Optional: Cohen's kappa for two annotators, a schema with aspects and evidence. Saves `data/processed/silver_labels.csv`. |
-| `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over the 500 sample reviews, both combined with reciprocal rank fusion, answers that cite review IDs (`R001`–`R500`), check of the cited reviews, and a made-up review that leads to a faithful but false answer. |
-| `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, shows what thinking costs in time, classifies 20 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
+| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: ratings of both chains, weighted vs. unweighted averages, review star distribution and sampling bias, three example texts, and a simple topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
+| `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
+| `03_Classify_Reviews/classify_reviews.ipynb` | Four short steps on 50 reviews (10 per star rating): free text vs. JSON schema; two predefined prompts with silver labels and separate few-shot examples; accuracy, five runs on five reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
+| `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over the 500 sample reviews, combined by a provided rank-fusion helper. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
+| `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
 
 ### `data/`: Yelp subset
 
