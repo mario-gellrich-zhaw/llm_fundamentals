@@ -1,12 +1,21 @@
-"""Local de-identification for the English course data; no remote recognizers.
+"""Local anonymization for the English course data; nothing is sent anywhere.
 
-Automated redaction is imperfect. Inspect the prepared text locally before use;
-remove remaining identifiers and identifying stories. It is not proof of anonymity.
+anonymize() replaces details that identify a person: names, e-mail addresses,
+phone numbers and account or ID numbers. Company names (IKEA), places (Tampa),
+nationalities (Swedish) and dates stay: the model needs them to understand a review.
+
+Automatic detection makes mistakes. Read the prepared texts before you use them.
 """
 from functools import lru_cache
 from threading import RLock
 
 _lock = RLock()
+
+# What we remove: details that identify a person (Presidio entity types)
+ENTITIES = [
+    'PERSON', 'EMAIL_ADDRESS', 'PHONE_NUMBER', 'CREDIT_CARD', 'IBAN_CODE', 'IP_ADDRESS',
+    'US_SSN', 'US_PASSPORT', 'US_DRIVER_LICENSE', 'US_BANK_NUMBER',
+]
 
 
 @lru_cache(maxsize=1)
@@ -31,18 +40,18 @@ def _analyzer():
 
 @lru_cache(maxsize=8192)
 def anonymize(text: str) -> str:
-    """Replace detected identifiers with <REDACTED>, entirely on this machine.
+    """Replace personal details with <REDACTED>, entirely on this machine.
 
-    Includes people, locations, dates, email, phone, URL, IP and ID/account
-    recognizers supplied by Presidio. English only; false positives/negatives occur.
-    Overlapping detections are merged, so no fragments of an overlap survive.
+    Removes names of people, e-mail addresses, phone numbers and account or ID
+    numbers (see ENTITIES). English only; the detection can miss details and can
+    remove harmless words. Overlapping detections are merged.
     """
     if not isinstance(text, str):
         raise TypeError('Expected text for local anonymization.')
     if not text:
         return text
     with _lock:
-        results = _analyzer().analyze(text=text, language='en', score_threshold=0.35)
+        results = _analyzer().analyze(text=text, language='en', entities=ENTITIES, score_threshold=0.35)
     spans = []
     for result in sorted(results, key=lambda r: (r.start, r.end)):
         if spans and result.start <= spans[-1][1]:

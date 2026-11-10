@@ -17,9 +17,8 @@ Git ignores the files, so they are never pushed to GitHub.
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
-| `processed/ikea_reviews_anonymized.csv` | 1,743 | Prepared review texts from notebook 01; original IDs and metadata retained for local analysis only |
-| `processed/fewshot_examples_anonymized.json` | 3 | Prepared few-shot examples from notebook 01 |
-| `processed/silver_labels.csv` | up to 200 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
+| `processed/reviews_sample.csv` | 500 | Anonymized random sample, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Mini_RAG` (not in the zip) |
+| `processed/silver_labels.csv` | up to 100 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 
 All of these are ignored by git; only this README and the empty folders `raw/` and
@@ -47,8 +46,8 @@ All of these are ignored by git; only this README and the empty folders `raw/` a
 | `date` | Date and time of the review (UTC) |
 | `text` | Full review text, original spelling |
 
-4 review texts appear more than once (9 rows); `04_Mini_RAG` removes the duplicates
-before indexing.
+4 review texts appear more than once (9 rows); `01_Explore_Yelp_Data` keeps each text
+once when it draws the sample.
 
 ### `fewshot_examples.json`
 
@@ -56,11 +55,28 @@ A list of 3 examples, each with `text` (review), `yelp_stars`, `sentiment` (our 
 `aspects` (our labels per aspect) and `note`. `03_Classify_Reviews` uses `text` and
 `sentiment`.
 
-### `processed/silver_labels.csv`
+### `processed/reviews_sample.csv`
+
+A random sample of 500 unique reviews (fixed seed, without the three few-shot examples).
+The texts are anonymized; Yelp IDs are replaced by short IDs.
 
 | Column | Meaning |
 |---|---|
-| `review_id` | Yelp ID of the review |
+| `id` | Short ID of the review in the sample, `R001` to `R500` |
+| `store`, `city` | Location of the review |
+| `stars` | Rating of the review, 1–5 |
+| `date` | Date and time of the review (UTC) |
+| `text` | Review text after local anonymization: names of people, e-mail addresses and phone numbers are replaced by `<REDACTED>` |
+
+### `processed/silver_labels.csv`
+
+100 reviews from the sample, 20 per star rating (fewer if the model gave no valid label).
+
+| Column | Meaning |
+|---|---|
+| `id` | Short ID of the review in the sample |
+| `stars` | Rating of the review, 1–5 |
+| `text` | Anonymized review text |
 | `silver` | Silver label from `gpt-6-luna` with high reasoning effort: `positive`, `negative` or `mixed` |
 
 ## How the subset was selected
@@ -96,23 +112,14 @@ contain names of people: don't search for or contact the authors.
 
 ## Before external API calls
 
-Keep this original data local. Run the local Presidio/spaCy anonymization cells in
-notebook 01, inspect and correct the prepared reviews/examples, then save the copies.
-Notebooks 02–05 load those copies instead of the original texts. Prepared CSVs retain
-IDs and store/date metadata for local joins; they remain private and are not a dataset
-to publish. Rerunning preparation resets manual corrections, and saving replaces the copies.
-Automated English detection can miss information. The API helpers redact again before
-transmission and caching; RAG uses local passage aliases rather than Yelp review IDs.
-Use synthetic data or local inference if sufficient de-identification is not feasible.
-See the main README's anonymization section for setup, limitations and cache handling.
+Keep the original data on your computer. The last part of notebook 01 draws the sample,
+anonymizes it locally with Presidio and spaCy, shows texts before and after, and saves
+`processed/reviews_sample.csv`. Notebooks 03–05 read only this sample. Notebook 02 counts
+the tokens of all reviews locally and sends none of them.
 
-Optional `processed/human_labels.csv`: one row per `review_id`, with independent
-`annotator_a`, `annotator_b` and resolved `gold` labels. Each label must be one of
-`positive`, `negative`, `mixed`. Compute agreement before resolving disagreements.
-
-Optional `processed/rag_relevance.csv`: `question,review_id,relevant` (0 or 1), one
-row per question and every indexed review. Complete independent labels are required
-for Recall@5; unjudged documents must not silently become negative labels.
+Automatic anonymization can miss personal details, so the files in `processed/` stay
+private too. The API helpers anonymize every text once more before sending it. See the
+section on anonymization in the main README.
 
 Silver labels are model-generated references, so reported accuracy against them is
 model agreement. Reference failures are excluded and counted; prediction failures count

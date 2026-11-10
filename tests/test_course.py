@@ -1,6 +1,7 @@
 """Offline regression checks: no real API client or network requests."""
 import concurrent.futures
 import json
+import os
 import tempfile
 import time
 import unittest
@@ -12,7 +13,6 @@ from openai.types.responses import Response
 from openai.types.decision import Decision
 from llm_course import client, privacy
 from llm_course.evaluation import parse_label, response_label
-from llm_course.retrieval import chunk_reviews
 import pandas as pd
 
 
@@ -127,113 +127,70 @@ class OutputTests(unittest.TestCase):
           (response('{"sentiment": []}'),'unparsed')]:self.assertEqual(response_label(result),label)
 
 
-class NotebookPreparationTests(unittest.TestCase):
-    def test_notebook_01_saves_redacted_copies_without_overwriting_sources(self):
-        import contextlib
-        import io
-        path = Path(__file__).resolve().parents[1] / '01_Explore_Yelp_Data/explore_yelp_data.ipynb'
-        notebook = json.loads(path.read_text())
-        preparation = next(''.join(c['source']) for c in notebook['cells']
-                           if c['cell_type'] == 'code' and '# Anonymize the review texts locally' in ''.join(c['source']))
-        save = next(''.join(c['source']) for c in notebook['cells']
-                    if c['cell_type'] == 'code' and '# Save prepared copies locally' in ''.join(c['source']))
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def code_cell(notebook, marker):
+    """Source of the first code cell of a notebook that contains the marker text."""
+    cells = json.loads((ROOT / notebook).read_text())['cells']
+    return next(''.join(c['source']) for c in cells
+                if c['cell_type'] == 'code' and marker in ''.join(c['source']))
+
+
+class NotebookTests(unittest.TestCase):
+    """The notebook cells that protect data, guide students and compute costs."""
+
+    def test_notebook_01_saves_only_anonymized_text(self):
+        notebook = '01_Explore_Yelp_Data/explore_yelp_data.ipynb'
         with tempfile.TemporaryDirectory() as tmp:
-            data = Path(tmp)
-            source = pd.DataFrame({'review_id':['local-id'], 'stars':[1], 'text':['John Smith was rude.']})
-            source.to_csv(data / 'ikea_reviews.csv', index=False)
-            examples = [{'text':'John Smith was helpful.', 'sentiment':'positive', 'note':'John Smith'}]
-            (data / 'fewshot_examples.json').write_text(json.dumps(examples))
-            originals = {name:(data / name).read_bytes() for name in ['ikea_reviews.csv', 'fewshot_examples.json']}
-            ns = {'DATA':data, 'df':source, 'json':json,
-                  'tqdm':lambda values,**kw:values,
-                  'anonymize':lambda text:text.replace('John Smith','<REDACTED>')}
+            sample = pd.DataFrame({'id': ['R001'], 'stars': [1], 'text': ['John Smith was rude.']})
+            ns = {'DATA': Path(tmp), 'os': os, 'pd': pd, 'sample': sample, 'tqdm': lambda values: values,
+                  'anonymize': lambda text: text.replace('John Smith', '<REDACTED>')}
+            import contextlib
+            import io
             with contextlib.redirect_stdout(io.StringIO()):
-                exec(compile(preparation, str(path), 'exec'), ns)
-                exec(compile(save, str(path), 'exec'), ns)
-            prepared = pd.read_csv(data / 'processed/ikea_reviews_anonymized.csv')
-            self.assertEqual(prepared.loc[0,'text'], '<REDACTED> was rude.')
-            self.assertEqual(prepared.loc[0,'review_id'], 'local-id')
-            self.assertEqual(source.loc[0,'text'], 'John Smith was rude.')
-            self.assertNotIn('John Smith', (data / 'processed/fewshot_examples_anonymized.json').read_text())
-            for name, content in originals.items():
-                self.assertEqual((data / name).read_bytes(), content)
-            # A failed rerun leaves stale notebook variables: saving must still stop.
-            outputs = {path:path.read_bytes() for path in (data / 'processed').iterdir()}
-            def failed_detector(text):
-                raise RuntimeError('missing detector')
-            ns['anonymize'] = failed_detector
-            with self.assertRaisesRegex(RuntimeError, 'missing detector'):
-                exec(compile(preparation, str(path), 'exec'), ns)
-            with self.assertRaisesRegex(RuntimeError, 'preparation'):
-                exec(compile(save, str(path), 'exec'), ns)
-            for output, content in outputs.items():
-                self.assertEqual(output.read_bytes(), content)
+                exec(code_cell(notebook, '# Keep the original text for the comparison'), ns)
+                exec(code_cell(notebook, '# Save the sample without the original texts'), ns)
+            saved = (Path(tmp) / 'processed/reviews_sample.csv').read_text()
+            self.assertIn('<REDACTED> was rude.', saved)
+            self.assertNotIn('John Smith', saved)
+            self.assertNotIn('original', saved)
 
-    def test_later_notebooks_stop_when_prepared_files_are_missing(self):
-        root = Path(__file__).resolve().parents[1]
+    def test_api_notebooks_explain_which_notebook_to_run_first(self):
+        cases = [('03_Classify_Reviews/classify_reviews.ipynb', 'sample_path = ', 'notebook 01'),
+                 ('04_Mini_RAG/mini_rag.ipynb', 'sample_path = ', 'notebook 01'),
+                 ('05_Local_Model/local_model.ipynb', 'silver_path = ', 'notebook 03')]
         with tempfile.TemporaryDirectory() as tmp:
-            data = Path(tmp)
             # A raw file must never be used as an automatic fallback.
-            (data / 'ikea_reviews.csv').write_text('review_id,text\nraw-id,raw personal information\n')
-            for folder in sorted(root.glob('0[2-5]_*')):
-                path = next(folder.glob('*.ipynb'))
-                notebook = json.loads(path.read_text())
-                load = next(''.join(c['source']) for c in notebook['cells']
-                            if c['cell_type'] == 'code' and "reviews_path = DATA / 'processed/" in ''.join(c['source']))
-                with self.subTest(notebook=path.name), self.assertRaisesRegex(FileNotFoundError, '01_Explore_Yelp_Data'):
-                    exec(compile(load, str(path), 'exec'), {'DATA':data, 'pd':pd, 'json':json})
+            (Path(tmp) / 'ikea_reviews.csv').write_text('review_id,text\nraw-id,raw personal information\n')
+            for notebook, marker, hint in cases:
+                with self.subTest(notebook=notebook), self.assertRaisesRegex(AssertionError, hint):
+                    exec(code_cell(notebook, marker), {'DATA': Path(tmp), 'pd': pd})
 
-
-class NotebookCostTests(unittest.TestCase):
-    def test_timing_cell_accounts_for_reads_writes_and_reasoning_once(self):
-        path = Path(__file__).resolve().parents[1] / '05_Local_Model/local_model.ipynb'
-        notebook = json.loads(path.read_text())
-        cell = next(''.join(c['source']) for c in notebook['cells']
-                    if c['cell_type'] == 'code' and '# Uncached requests:' in ''.join(c['source']))
-        result = SimpleNamespace(status='completed', output_text='Overall: negative.', usage=SimpleNamespace(
-            input_tokens=100, output_tokens=10,
-            input_tokens_details=SimpleNamespace(cached_tokens=40, cache_write_tokens=20)))
-        namespace = {'test':pd.DataFrame({'text':['safe']*20}), 'ask':lambda **kw:result,
-                     'time':time, 'MODEL':'fake', 'PROMPT':'label: ', 'parse_label':parse_label,
-                     'PRICE_INPUT_PER_M':0.10, 'PRICE_OUTPUT_PER_M':0.50}
-        exec(compile(cell, str(path), 'exec'), namespace)
-        self.assertAlmostEqual(namespace['api_cost'], 0.000238)
-        self.assertEqual(namespace['output_tokens'], 200)  # Includes reasoning already.
-
-
-class CharTokenizer:
-    # One character per token makes the boundary/overlap invariant inspectable.
-    def encode(self,text,add_special_tokens=False):return list(text)+([0,1] if add_special_tokens else [])
-    def num_special_tokens_to_add(self,pair=False):return 2
-    def __call__(self,text,**kwargs):return {'offset_mapping':[(i,i+1) for i in range(len(text))]}
-
-
-class RetrievalTests(unittest.TestCase):
-    def test_every_character_is_covered_and_no_passage_exceeds_budget(self):
-        tokenizer=CharTokenizer();text='0123456789'*20
-        chunks=chunk_reviews(pd.DataFrame([{'review_id':'private-id','text':text}]),tokenizer,max_tokens=30,overlap=5)
-        self.assertGreater(len(chunks),1)
-        self.assertTrue(chunks.citation_id.is_unique)
-        self.assertTrue(all(len(tokenizer.encode('passage: '+t,add_special_tokens=True))<=30 for t in chunks.text))
-        rebuilt=chunks.iloc[0].text+''.join(t[5:] for t in chunks.text.iloc[1:])
-        self.assertEqual(rebuilt,text)
-        self.assertTrue(all('private-id' not in c for c in chunks.citation_id))
-
-
-    def test_retrieval_keeps_distinct_source_reviews(self):
+    def test_notebook_04_retrieve_combines_keyword_and_meaning_ranks(self):
         import numpy as np
-        path = Path(__file__).resolve().parents[1] / '04_Mini_RAG/mini_rag.ipynb'
-        notebook = json.loads(path.read_text())
-        source = next(''.join(c['source']) for c in notebook['cells']
-                      if c['cell_type'] == 'code' and 'def retrieve(' in ''.join(c['source']))
-        function_source = source.split('# Our three questions')[0]
-        chunks = pd.DataFrame({'review_id':['A','A','B'], 'text':['part1','part2','other']})
-        namespace = {'pd':pd, 'chunks':chunks, 'tokenize':str.split,
-                     'bm25':SimpleNamespace(get_scores=lambda q:[3.,2.,1.]),
-                     'model':SimpleNamespace(encode=lambda *a,**kw:np.array([[1.,0.]])),
-                     'embeddings':np.array([[1.,0.],[1.,0.],[1.,0.]])}
-        exec(compile(function_source, str(path), 'exec'), namespace)
-        self.assertEqual(namespace['retrieve']('question', k=2)['review_id'].tolist(), ['A','B'])
+        source = code_cell('04_Mini_RAG/mini_rag.ipynb', 'def retrieve(').split('# Our three questions')[0]
+        ns = {'pd': pd, 'tokenize': str.split,
+              'df': pd.DataFrame({'id': ['R001', 'R002', 'R003'], 'stars': [1, 2, 3], 'text': ['a', 'b', 'c']}),
+              'bm25': SimpleNamespace(get_scores=lambda query: [3., 2., 1.]),        # ranks 1, 2, 3
+              'embeddings': np.array([[.1], [.9], [.5]]),                            # ranks 3, 1, 2
+              'model': SimpleNamespace(encode=lambda text, **kw: np.array([1.]))}
+        exec(source, ns)
+        self.assertEqual(ns['retrieve']('question', k=2)['id'].tolist(), ['R002', 'R001'])
+
+    def test_notebook_05_cost_uses_input_and_output_tokens_without_cache(self):
+        cell = code_cell('05_Local_Model/local_model.ipynb', '# API model: the same reviews')
+        calls = []
+        def fake_ask(**kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(output_text='negative', usage=SimpleNamespace(input_tokens=100, output_tokens=10))
+        ns = {'test': pd.DataFrame({'text': ['safe'] * 20}), 'ask': fake_ask, 'time': time,
+              'MODEL': 'fake', 'PROMPT': 'label: ', 'parse_label': parse_label,
+              'PRICE_INPUT_PER_M': 0.10, 'PRICE_OUTPUT_PER_M': 0.50, 'print': lambda *a, **k: None}
+        exec(cell, ns)
+        self.assertAlmostEqual(ns['api_cost'], (2000 * 0.10 + 200 * 0.50) / 1_000_000)
+        self.assertTrue(all(call['use_cache'] is False for call in calls))
+        self.assertEqual(ns['test']['api'].tolist(), ['negative'] * 20)
 
 
 if __name__=='__main__':unittest.main()

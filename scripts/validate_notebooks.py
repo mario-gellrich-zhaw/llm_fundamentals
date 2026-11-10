@@ -41,12 +41,18 @@ class Embeddings:
         self.tokenizer = Tokenizer()
         self.max_seq_length = 512
     def encode(self, texts, **kwargs):
-        vectors = np.array([list(hashlib.sha256(t.encode()).digest()) for t in texts], dtype=float)
-        return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        single = isinstance(texts, str)  # One text gives one vector, a list gives a matrix.
+        vectors = np.array([list(hashlib.sha256(t.encode()).digest()) for t in ([texts] if single else texts)], dtype=float)
+        vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        return vectors[0] if single else vectors
 
 
 def response(**kwargs):
-    text = '{"sentiment":"negative"}' if 'text' in kwargs else 'Overall: negative.'
+    schema_name = kwargs.get('text', {}).get('format', {}).get('name')
+    if schema_name == 'aspects':
+        text = '{"sentiment":"negative","aspects":[{"aspect":"service","polarity":"negative","evidence":""}]}'
+    else:
+        text = '{"sentiment":"negative"}' if schema_name else 'Overall: negative.'
     return Response.model_validate({
         'id':'resp_offline','object':'response','created_at':1,'model':'gpt-6-luna','status':'completed',
         'parallel_tool_calls':True,'tool_choice':'auto','tools':[],
@@ -109,15 +115,15 @@ def main():
                     raise RuntimeError(f'{path.name}, cell {index} failed: {type(exc).__name__}') from exc
                 count += 1
             if folder.name.startswith('01_'):
-                assert (data / 'processed/ikea_reviews_anonymized.csv').exists()
-                assert (data / 'processed/fewshot_examples_anonymized.json').exists()
-                assert len(namespace['prepared_reviews']) == len(namespace['df'])
+                saved = (data / 'processed/reviews_sample.csv').read_text()
+                assert len(namespace['sample']) == 500 and 'original' not in saved.splitlines()[0]
                 # Notebook 01 must preserve the source download byte-for-byte.
                 with zipfile.ZipFile(archive) as source_zip:
                     for filename in ('ikea_reviews.csv', 'fewshot_examples.json'):
                         assert (data / filename).read_bytes() == source_zip.read(filename)
             if folder.name.startswith('03_'):
                 assert not set(namespace['test'].text) & {ex['text'] for ex in namespace['fewshot']}
+                assert (data / 'processed/silver_labels.csv').exists()
             print(f'PASS {path.relative_to(ROOT)} ({count} Python cells; fake clients)', flush=True)
     print('No paid calls, remote inference, downloads or original-data changes.')
 
