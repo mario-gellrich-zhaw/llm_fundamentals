@@ -28,7 +28,7 @@ SOLUTION_NB = AP / 'AP01_Large_Language_Models_Musterloesung.ipynb'
 
 TITLE = """# Arbeitspaket (AP) 1: Large Language Models
 
-**Übungsprüfung – 40 Punkte, Richtzeit 40 Minuten** (rund 1 Minute pro Punkt)"""
+**Übungsprüfung – 40 Punkte, Richtzeit 40 Minuten**"""
 
 PERSONAL = """### Persönliche Angaben (bitte ergänzen) und Prüfungsregeln
 
@@ -45,12 +45,16 @@ PERSONAL = """### Persönliche Angaben (bitte ergänzen) und Prüfungsregeln
 
 GRADING = """## Bewertungskriterien
 
-| Teil | Aufgaben | Punkte |
-|---|---|---:|
-| A: Konzeptfragen mit Datenbezug | A1–A3 | 12 |
-| B: Fehleranalyse und Korrektur | B1–B2 | 16 |
-| C: Python-Code schreiben oder ergänzen | C1–C3 | 12 |
-| **Total** | **8 Aufgaben** | **40** |
+| Teil | Aufgaben | Punkte | Richtzeit |
+|---|---|---:|---:|
+| Einlesen und Setup ausführen | – | – | 3 Min. |
+| A: Konzeptfragen mit Datenbezug | A1–A3 | 12 | 13 Min. |
+| B: Fehleranalyse und Korrektur | B1–B2 | 16 | 11 Min. |
+| C: Python-Code ergänzen und Ergebnisse einordnen | C1–C3 | 12 | 11 Min. |
+| Schlusskontrolle | – | – | 2 Min. |
+| **Total** | **8 Aufgaben** | **40** | **40 Min.** |
+
+Die Richtzeiten setzen voraus, dass Sie die Übungen 01–05 bearbeitet haben und die Python-Umgebung bereit ist. Antworten Sie knapp: pro Teilfrage ein bis zwei Sätze oder Stichpunkte; bei Begründungen zu Codefehlern genügt je ein Satz.
 
 ### Bewertungsschema
 
@@ -158,7 +162,7 @@ print('Zeitpunkt:', datetime.now().isoformat(timespec='seconds'))"""
 # --------------------------------------------------------------------------
 
 A1 = dict(
-    question="""### A1 (4 Punkte)
+    question="""### A1 (4 Punkte · ca. 4 Minuten)
 
 Der Chatbot «WohnWerk-Assistent» ruft `gpt-6-luna` über die API auf. Auszug aus dem Log eines Gesprächs:
 
@@ -195,7 +199,7 @@ def a2_examples():
 A2_ROWS, A2_EQUAL, A2_N = a2_examples()
 
 A2 = dict(
-    question=f"""### A2 (4 Punkte)
+    question=f"""### A2 (4 Punkte · ca. 4 Minuten)
 
 Jedes Review hat zwei Labels: `stars_label` ist aus den Sternen abgeleitet, `gold_label` beschreibt die Stimmung des Texts. Bei {A2_EQUAL} von {A2_N} Reviews ({A2_EQUAL / A2_N * 100:.0f} %) sind die beiden Labels gleich, bei {A2_N - A2_EQUAL} Reviews nicht. Zwei Beispiele:
 
@@ -214,7 +218,7 @@ b) Beide richtigen Antworten würden als **Fehler** gezählt, weil sie von `star
 )
 
 A3 = dict(
-    question="""### A3 (4 Punkte)
+    question="""### A3 (4 Punkte · ca. 5 Minuten)
 
 Review `R147` (1 Stern) lautet:
 
@@ -231,7 +235,7 @@ b) Falsch. Das JSON Schema legt nur die **Form** der Antwort fest, nicht die Wah
 )
 
 B1 = dict(
-    question_head="""### B1 (8 Punkte)
+    question_head="""### B1 (8 Punkte · ca. 5 Minuten)
 
 Berechnen Sie die Input-Kosten für alle 300 Reviews. Jeder Aufruf enthält **185 Prompt-Tokens plus die Review-Tokens** (`n_tokens`). Der Preis gilt pro **1 Million Tokens**.
 
@@ -251,49 +255,48 @@ print('Kosten (USD):', round(cost_sample_B1, 4))""",
 )
 
 B2 = dict(
-    question_head="""### B2 (8 Punkte)
+    question_head="""### B2 (8 Punkte · ca. 6 Minuten)
 
-Berechnen Sie die Accuracy gegenüber `gold_label`. Das gesuchte Label steht **am Ende** jeder Antwort, z.B.:
+Vergleichen Sie den **vagen** und den **präzisen Prompt** anhand der Accuracy gegenüber `gold_label`.
+Die Vorhersagen sind vorgegeben: `vague` nutzt die einfache Freitext-Regel aus Übung 03, `precise` die Labels aus Durchlauf 1.
 
-> The customer is not positive. Overall: negative.
+Die Accuracy-Zeile enthält **zwei Fehler**. Korrigieren und begründen Sie diese. Welcher Prompt ist genauer?""",
+    faulty="""# Vorgegeben: dieselbe Freitext-Regel wie in Übung 03.
+def first_label(answer):
+    words = re.findall(r'positive|negative|mixed', answer.lower())
+    if words:
+        return words[0]
+    return 'none'
 
-Korrigieren Sie die **zwei Fehler** in der Codezelle. Begründen Sie jede Änderung in einem Satz.
-
-*Tipp: `found[0]` ist das erste, `found[-1]` das letzte gefundene Label.*""",
-    faulty="""# Vorgegeben: Antworten und Reviews verbinden.
+# Vorgegeben: beide Vorhersagen mit den Referenzlabels verbinden.
 df_B2 = df.merge(df_answers, on='review_id')
+precise_B2 = df_runs[df_runs['run'] == 1][['review_id', 'label']]
+df_B2 = df_B2.merge(precise_B2, on='review_id').rename(columns={'label': 'precise'})
+df_B2['vague'] = [first_label(answer) for answer in df_B2['answer']]
 
-def parse_label(answer):
-    found = re.findall(r'positive|negative|mixed', answer.lower())
-    return found[0] if found else 'unparsed'
+for column in ['vague', 'precise']:
+    accuracy = accuracy_score(df_B2['stars_label'], df_B2['precise'])
+    print(column, round(accuracy, 3))""",
+    answer="""1. `gold_label` statt `stars_label`: Bewertet wird die Stimmung des Texts.
+2. `df_B2[column]` statt immer `df_B2['precise']`: Jeder Prompt muss mit seinen eigenen Vorhersagen bewertet werden.
 
-df_B2['pred'] = df_B2['answer'].apply(parse_label)
-print('Accuracy:', round(accuracy_score(df_B2['stars_label'], df_B2['pred']), 3))""",
-    answer="""1. `found[-1]` liest das Label am Ende; das erste Label-Wort kann zur Begründung gehören.
-2. Als Referenz dient `gold_label`, da die Stimmung des Texts bewertet wird.
-
-Ergebnis: Accuracy **0.907**.""",
-    code="""# Vorgegeben: Antworten und Reviews verbinden.
-df_B2 = df.merge(df_answers, on='review_id')
-
-def parse_label(answer):
-    found = re.findall(r'positive|negative|mixed', answer.lower())
-    return found[-1] if found else 'unparsed'
-
-df_B2['pred'] = df_B2['answer'].apply(parse_label)
-print('Accuracy:', round(accuracy_score(df_B2['gold_label'], df_B2['pred']), 3))""",
+Der präzise Prompt ist genauer: **0.940** gegenüber **0.497** beim vagen Prompt. Die einfache Freitext-Regel kann z.B. bei «not positive» das falsche Label lesen.""",
+)
+B2['code'] = B2['faulty'].replace(
+    "accuracy_score(df_B2['stars_label'], df_B2['precise'])",
+    "accuracy_score(df_B2['gold_label'], df_B2[column])"
 )
 
 C1 = dict(
-    question="""### C1 (4 Punkte)
+    question="""### C1 (4 Punkte · ca. 3 Minuten)
 
 `runs_C1` enthält fünf Labels je Review (eine Spalte je Durchlauf).
 
 Ergänzen Sie `changed_C1`: `True`, wenn mehr als ein verschiedenes Label vorkommt.
 *Tipp: `runs_C1.nunique(axis=1)` zählt die verschiedenen Labels je Zeile.*
 
-Nennen Sie eine Massnahme für Reviews mit wechselndem Label.""",
-    answer="""Bei **22.7 %** der Reviews wechselt das Label. Diese Reviews können von einer Person geprüft werden.""",
+Belegt ein gleichbleibendes Label auch, dass es korrekt ist? Begründen Sie kurz und nennen Sie eine Massnahme für Reviews mit wechselndem Label.""",
+    answer="""Bei **22.7 %** der Reviews wechselt das Label. Ein gleichbleibendes Label belegt nur Konsistenz: Ein Modell kann immer denselben Fehler machen. Korrektheit wird gegenüber Gold Labels gemessen. Reviews mit wechselndem Label können von einer Person geprüft werden.""",
     code="""# Vorgegeben: fünf Durchläufe je Review.
 runs_C1 = df_runs.pivot(index='review_id', columns='run', values='label')
 
@@ -307,54 +310,65 @@ C1['skeleton'] = C1['code'].replace(
 )
 
 C2 = dict(
-    question="""### C2 (4 Punkte)
+    question="""### C2 (4 Punkte · ca. 4 Minuten)
 
-Die BM25-Scores zur Suche nach Montageproblemen sind vorgegeben.
-Ergänzen Sie `output_C2`: die **fünf Reviews mit dem höchsten Score**.
-*Tipp: `df_C2.nlargest(5, 'bm25')`.*
+Suchen Sie Reviews zu **Montageproblemen**. BM25-Index und Suchanfrage sind vorgegeben.
+Ergänzen Sie die Berechnung der BM25-Scores; die Top 5 werden automatisch ausgegeben.
 
-Warum kann BM25 ein passendes Review übersehen, wenn es andere Wörter als die Suchanfrage verwendet?""",
-    answer="""BM25 sucht nach gemeinsamen Wörtern. Andere Formulierungen können deshalb einen tiefen Score erhalten, obwohl sie inhaltlich passen.""",
-    code="""# Vorgegeben: BM25-Scores berechnen.
+a) Warum kann eine Suche mit **Embeddings** passende Reviews finden, die BM25 übersieht?
+
+b) Wie verwenden Sie die gefundenen Reviews in einem **RAG-Prompt**, damit die Antwort überprüfbar ist? Nennen Sie auch die nötige inhaltliche Prüfung.""",
+    answer="""`bm25_C2.get_scores(tokenize(query_C2))` berechnet die Scores für die Wörter der Suchanfrage.
+
+a) BM25 braucht gemeinsame Wörter; Embeddings vergleichen die Bedeutung und können dadurch auch andere Formulierungen finden.
+
+b) Die Treffer mit ihren Review-IDs als Kontext mitsenden und nur daraus eine Antwort mit zitierten IDs verlangen. Danach prüfen, ob die zitierten Texte die jeweiligen Aussagen tatsächlich stützen; eine gültige ID allein genügt nicht.""",
+    code="""# Vorgegeben: Index und Suchanfrage wie in Übung 04.
 def tokenize(text):
     return re.findall(r'\\w+', text.lower())
 
-bm25_C2 = BM25Okapi([tokenize(t) for t in df['text']])
+bm25_C2 = BM25Okapi([tokenize(text) for text in df['text']])
 query_C2 = 'assembly instructions missing parts'
 df_C2 = df[['review_id', 'text']].copy()
+
 df_C2['bm25'] = bm25_C2.get_scores(tokenize(query_C2))
 
-output_C2 = df_C2.nlargest(5, 'bm25')
-
-# Vorgegeben: Treffer ausgeben.
-print(output_C2.round(2).to_string(index=False))""",
+# Vorgegeben: die fünf besten Treffer ausgeben.
+print(df_C2.nlargest(5, 'bm25').round(2).to_string(index=False))""",
 )
 C2['skeleton'] = C2['code'].replace(
-    "output_C2 = df_C2.nlargest(5, 'bm25')", 'output_C2 = None  # TODO'
+    "df_C2['bm25'] = bm25_C2.get_scores(tokenize(query_C2))",
+    "df_C2['bm25'] = None  # TODO"
 )
 
 C3 = dict(
-    question="""### C3 (4 Punkte)
+    question="""### C3 (4 Punkte · ca. 4 Minuten)
 
-Vergleichen Sie die beiden Modelle. `correct` ist bei einem richtigen Label `True`, sonst `False`.
+Beide Modelle haben dieselben 60 Reviews klassifiziert. Ergänzen Sie die **Accuracy gegenüber `gold_label`** für jedes Modell mit `accuracy_score(...)`.
 
-Ergänzen Sie `means_C3`: die Mittelwerte von **`correct` und `seconds` je Modell**.
-*Tipp: `df_C3.groupby('model')[[...]].mean()`. Der Mittelwert von `correct` ist die Accuracy.*
+Zusätzlich sind aus denselben Daten vorgegeben:
 
-Welches Modell ist in diesen Daten genauer und schneller?""",
-    answer="""**`gpt-6-luna`** ist genauer (Accuracy 0.967 statt 0.700) und schneller (1.18 statt 7.75 Sekunden pro Review).""",
-    code="""# Vorgegeben: Vorhersagen mit Gold Labels vergleichen.
+| Modell | Sekunden pro Review | API-Kosten pro 10'000 Reviews (USD) |
+|---|---:|---:|
+| `gpt-6-luna` | 1.18 | 0.319 |
+| `qwen3:1.7b` | 7.75 | 0.000 |
+
+Empfehlen Sie anhand von **Accuracy, Antwortzeit und API-Kosten** ein Modell, wenn externe Verarbeitung erlaubt ist und zuverlässige Labels wichtig sind. Nennen Sie eine Anforderung, die trotzdem für das lokale Modell spricht. Bedeutet «keine API-Kosten» auch «kostenloser Betrieb»?""",
+    answer="""Für diese Daten spricht viel für **`gpt-6-luna`**: höhere Accuracy (**0.967** statt **0.700**), kürzere Antwortzeit (1.18 statt 7.75 Sekunden) und geringe API-Kosten (USD 0.319 pro 10'000 Reviews).
+
+Eine Vorgabe, dass Reviews auf dem eigenen Rechner bleiben müssen, spricht für das lokale Modell. Ohne API-Kosten fallen dennoch Kosten für Hardware, Strom und Betrieb an. Auch eine andere Empfehlung mit nachvollziehbarer Abwägung wird akzeptiert.""",
+    code="""# Vorgegeben: Vorhersagen mit Gold Labels verbinden.
 df_C3 = df_models.merge(df[['review_id', 'gold_label']], on='review_id')
-df_C3['correct'] = df_C3['label'] == df_C3['gold_label']
 
-means_C3 = df_C3.groupby('model')[['correct', 'seconds']].mean()
-
-# Vorgegeben: Vergleich ausgeben.
-print(means_C3.round(3).to_string())""",
+for model in ['gpt-6-luna', 'qwen3:1.7b']:
+    # Vorgegeben: dieselben 60 Reviews, jeweils ein Modell.
+    test_C3 = df_C3[df_C3['model'] == model]
+    accuracy = accuracy_score(test_C3['gold_label'], test_C3['label'])
+    print(model, round(accuracy, 3))""",
 )
 C3['skeleton'] = C3['code'].replace(
-    "means_C3 = df_C3.groupby('model')[['correct', 'seconds']].mean()",
-    'means_C3 = None  # TODO'
+    "accuracy = accuracy_score(test_C3['gold_label'], test_C3['label'])",
+    'accuracy = None  # TODO'
 )
 
 # --------------------------------------------------------------------------
@@ -399,7 +413,7 @@ def build(solution):
     label = '**Musterantwort / Begründung:**\n\n' if solution else '**Ihre Antwort / Begründung:**\n\n'
 
     def answer_cell(task):
-        return md(label + (task['answer'] if solution else ''))
+        return md(label + (task['answer'] if solution else '> [Hier eintragen]'))
 
     cells = [md(TITLE), md(PERSONAL), md(GRADING), md(DATA_NOTES), md(SETUP_INTRO)]
     cells += [code(s) for s in SETUP_CODE]
