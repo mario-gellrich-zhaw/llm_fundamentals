@@ -11,30 +11,47 @@ and simulated model results, so it needs neither an API key nor the Yelp downloa
 
 ## Getting started
 
-1. Open <https://codespaces.new/mario-gellrich-zhaw/llm_fundamentals>.
-2. GitHub asks for **`OPENAI_API_KEY`**: paste the course key you received from your
-   lecturer, then click **Create codespace**. See [API key](#api-key) below.
-3. Wait until VS Code opens in the browser. The first start takes several minutes while
+1. **Fork this repository:** click **Fork** at the top right of
+   <https://github.com/mario-gellrich-zhaw/llm_fundamentals>, then **Create fork**.
+   You now have your own copy, `<your-username>/llm_fundamentals`, where you can save
+   your work.
+2. **Store the course key** as a Codespaces secret, once, before you create the
+   codespace. See [API key](#api-key) below.
+3. **Create the codespace from your fork**, not from this repository: open
+   `https://codespaces.new/<your-username>/llm_fundamentals` (replace `<your-username>`),
+   or on your fork click **Code** → **Codespaces** → **Create codespace on master**.
+4. Wait until VS Code opens in the browser. The first start takes several minutes while
    PyTorch, the local privacy model and Ollama are installed; later starts are fast.
-4. Add the data from Moodle, see [Data](#data) below.
-5. Run [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb),
+5. Add the data from Moodle, see [Data](#data) below.
+6. Run [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb),
    including **Anonymize the texts for notebooks 02–05**, local inspection, and **Save the prepared files**.
    In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
    the first code cell should print `API key found: True`.
 
 ### API key
 
-You don't need your own OpenAI account. You enter the course key once, when you create
-the codespace. GitHub saves it as a Codespaces secret in your personal settings and makes
-it available in your codespace as the environment variable `OPENAI_API_KEY`. It is never
-stored in the repository.
-
-Missed the prompt, or `API key found: False`?
+You don't need your own OpenAI account. You store the course key once as a Codespaces
+secret in your GitHub settings. GitHub makes it available in your codespace as the
+environment variable `OPENAI_API_KEY`. It is never stored in the repository.
 
 1. Open <https://github.com/settings/codespaces> → **Codespaces secrets** → **New secret**.
-2. Name: `OPENAI_API_KEY`, value: the course key, repository access: `llm_fundamentals`.
-3. Restart the codespace: in VS Code, open the Command Palette (`F1`) and choose
-   **Codespaces: Rebuild Container**, or stop and start it on <https://github.com/codespaces>.
+2. Name: `OPENAI_API_KEY`, value: the course key you received from your lecturer.
+3. **Repository access: your fork, `<your-username>/llm_fundamentals`.** A secret only
+   reaches codespaces of the repositories in this list.
+4. Click **Add secret**.
+
+Depending on how you create the codespace, GitHub may also ask for `OPENAI_API_KEY` on
+the creation page. If the secret is already stored, you can ignore that field.
+
+`API key found: False`?
+
+- Check the secret on <https://github.com/settings/codespaces>: is the name exactly
+  `OPENAI_API_KEY`, and is **your fork** in the repository access list?
+- Was the codespace created from your fork? Its address bar and the bottom-left corner
+  of VS Code show the repository.
+- Restart the codespace after you add or change the secret: open the Command Palette
+  (`F1`) and choose **Codespaces: Stop Current Codespace**, then open it again on
+  <https://github.com/codespaces>. Secrets are only loaded when a codespace starts.
 
 - **Keep the key private.** Don't print it, copy it or show it in screenshots.
 - **All of us share one key.** If you see `429 rate limit`, just wait: the notebooks retry
@@ -47,6 +64,27 @@ Missed the prompt, or `API key found: False`?
 
 Working outside Codespaces? Copy `.env.example` to `.env` and enter your own key.
 `.env` is never committed.
+
+### Codespaces costs
+
+When you create a codespace, GitHub shows *«Codespace usage for this repository is paid
+for by <your-username>»*. That is expected: codespaces of personal accounts are always
+paid by the person who creates them, from that person's monthly free quota. Check the
+current quota and your usage on <https://github.com/settings/billing>.
+
+- **The free quota is enough for this course** if you use the default 2-core machine.
+  The quota counts core-hours: a 4-core machine uses it twice as fast. Switch back to
+  2 cores after the optional speed test in `05_Local_Model`.
+- **The spending limit is USD 0 by default.** When the quota is used up, codespaces stop;
+  nothing is charged unless you raise the limit.
+- **Stopped codespaces still use storage.** PyTorch, the embedding model and the Ollama
+  model make this codespace a few GB large. Delete it on <https://github.com/codespaces>
+  when you no longer need it; push your work to your fork first.
+- **Idle codespaces stop after 30 minutes** by default, so a forgotten browser tab does
+  not use up your quota.
+
+Your fork is public, like this repository. Push only your code and notebooks: the data,
+`.env` and the answer cache are ignored by Git and never leave the codespace.
 
 ### Data
 
