@@ -17,6 +17,8 @@ Git ignores the files, so they are never pushed to GitHub.
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
+| `processed/ikea_reviews_anonymized.csv` | 1,743 | Prepared review texts from notebook 01; original IDs and metadata retained for local analysis only |
+| `processed/fewshot_examples_anonymized.json` | 3 | Prepared few-shot examples from notebook 01 |
 | `processed/silver_labels.csv` | up to 200 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 
@@ -94,8 +96,11 @@ contain names of people: don't search for or contact the authors.
 
 ## Before external API calls
 
-Keep this original data local. Each API notebook prepares review text with local
-Presidio/spaCy redaction; inspect the result for identifiers and identifying stories.
+Keep this original data local. Run the local Presidio/spaCy anonymization cells in
+notebook 01, inspect and correct the prepared reviews/examples, then save the copies.
+Notebooks 02–05 load those copies instead of the original texts. Prepared CSVs retain
+IDs and store/date metadata for local joins; they remain private and are not a dataset
+to publish. Rerunning preparation resets manual corrections, and saving replaces the copies.
 Automated English detection can miss information. The API helpers redact again before
 transmission and caching; RAG uses local passage aliases rather than Yelp review IDs.
 Use synthetic data or local inference if sufficient de-identification is not feasible.

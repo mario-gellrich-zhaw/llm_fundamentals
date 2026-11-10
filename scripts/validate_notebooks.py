@@ -108,6 +108,14 @@ def main():
                 except Exception as exc:
                     raise RuntimeError(f'{path.name}, cell {index} failed: {type(exc).__name__}') from exc
                 count += 1
+            if folder.name.startswith('01_'):
+                assert (data / 'processed/ikea_reviews_anonymized.csv').exists()
+                assert (data / 'processed/fewshot_examples_anonymized.json').exists()
+                assert len(namespace['prepared_reviews']) == len(namespace['df'])
+                # Notebook 01 must preserve the source download byte-for-byte.
+                with zipfile.ZipFile(archive) as source_zip:
+                    for filename in ('ikea_reviews.csv', 'fewshot_examples.json'):
+                        assert (data / filename).read_bytes() == source_zip.read(filename)
             if folder.name.startswith('03_'):
                 assert not set(namespace['test'].text) & {ex['text'] for ex in namespace['fewshot']}
             print(f'PASS {path.relative_to(ROOT)} ({count} Python cells; fake clients)', flush=True)

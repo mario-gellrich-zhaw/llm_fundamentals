@@ -127,6 +127,63 @@ class OutputTests(unittest.TestCase):
           (response('{"sentiment": []}'),'unparsed')]:self.assertEqual(response_label(result),label)
 
 
+class NotebookPreparationTests(unittest.TestCase):
+    def test_notebook_01_saves_redacted_copies_without_overwriting_sources(self):
+        import contextlib
+        import io
+        path = Path(__file__).resolve().parents[1] / '01_Explore_Yelp_Data/explore_yelp_data.ipynb'
+        notebook = json.loads(path.read_text())
+        preparation = next(''.join(c['source']) for c in notebook['cells']
+                           if c['cell_type'] == 'code' and '# Anonymize the review texts locally' in ''.join(c['source']))
+        save = next(''.join(c['source']) for c in notebook['cells']
+                    if c['cell_type'] == 'code' and '# Save prepared copies locally' in ''.join(c['source']))
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp)
+            source = pd.DataFrame({'review_id':['local-id'], 'stars':[1], 'text':['John Smith was rude.']})
+            source.to_csv(data / 'ikea_reviews.csv', index=False)
+            examples = [{'text':'John Smith was helpful.', 'sentiment':'positive', 'note':'John Smith'}]
+            (data / 'fewshot_examples.json').write_text(json.dumps(examples))
+            originals = {name:(data / name).read_bytes() for name in ['ikea_reviews.csv', 'fewshot_examples.json']}
+            ns = {'DATA':data, 'df':source, 'json':json,
+                  'tqdm':lambda values,**kw:values,
+                  'anonymize':lambda text:text.replace('John Smith','<REDACTED>')}
+            with contextlib.redirect_stdout(io.StringIO()):
+                exec(compile(preparation, str(path), 'exec'), ns)
+                exec(compile(save, str(path), 'exec'), ns)
+            prepared = pd.read_csv(data / 'processed/ikea_reviews_anonymized.csv')
+            self.assertEqual(prepared.loc[0,'text'], '<REDACTED> was rude.')
+            self.assertEqual(prepared.loc[0,'review_id'], 'local-id')
+            self.assertEqual(source.loc[0,'text'], 'John Smith was rude.')
+            self.assertNotIn('John Smith', (data / 'processed/fewshot_examples_anonymized.json').read_text())
+            for name, content in originals.items():
+                self.assertEqual((data / name).read_bytes(), content)
+            # A failed rerun leaves stale notebook variables: saving must still stop.
+            outputs = {path:path.read_bytes() for path in (data / 'processed').iterdir()}
+            def failed_detector(text):
+                raise RuntimeError('missing detector')
+            ns['anonymize'] = failed_detector
+            with self.assertRaisesRegex(RuntimeError, 'missing detector'):
+                exec(compile(preparation, str(path), 'exec'), ns)
+            with self.assertRaisesRegex(RuntimeError, 'preparation'):
+                exec(compile(save, str(path), 'exec'), ns)
+            for output, content in outputs.items():
+                self.assertEqual(output.read_bytes(), content)
+
+    def test_later_notebooks_stop_when_prepared_files_are_missing(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp)
+            # A raw file must never be used as an automatic fallback.
+            (data / 'ikea_reviews.csv').write_text('review_id,text\nraw-id,raw personal information\n')
+            for folder in sorted(root.glob('0[2-5]_*')):
+                path = next(folder.glob('*.ipynb'))
+                notebook = json.loads(path.read_text())
+                load = next(''.join(c['source']) for c in notebook['cells']
+                            if c['cell_type'] == 'code' and "reviews_path = DATA / 'processed/" in ''.join(c['source']))
+                with self.subTest(notebook=path.name), self.assertRaisesRegex(FileNotFoundError, '01_Explore_Yelp_Data'):
+                    exec(compile(load, str(path), 'exec'), {'DATA':data, 'pd':pd, 'json':json})
+
+
 class NotebookCostTests(unittest.TestCase):
     def test_timing_cell_accounts_for_reads_writes_and_reasoning_once(self):
         path = Path(__file__).resolve().parents[1] / '05_Local_Model/local_model.ipynb'

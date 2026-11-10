@@ -17,7 +17,8 @@ and simulated model results, so it needs neither an API key nor the Yelp downloa
 3. Wait until VS Code opens in the browser. The first start takes several minutes while
    PyTorch, the local privacy model and Ollama are installed; later starts are fast.
 4. Add the data from Moodle, see [Data](#data) below.
-5. Start with [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb).
+5. Run [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb),
+   including **Anonymize the texts for notebooks 02–05**, local inspection, and **Save the prepared files**.
    In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
    the first code cell should print `API key found: True`.
 
@@ -92,10 +93,19 @@ The optional Ollama cells require a Linux/macOS shell; the supplied Codespace is
 
 ### Anonymization before OpenAI
 
-Every API exercise includes a local anonymization step **before** reviews enter a prompt.
+Notebook **01_Explore_Yelp_Data** contains the student-run anonymization step. Run it,
+inspect the prepared texts locally, correct remaining identifiers, and save the copies
+before opening notebooks 02–05. It requires no API key and makes no OpenAI calls.
+The progress bar covers all review texts; few-shot examples are prepared too.
+Later notebooks load `data/processed/ikea_reviews_anonymized.csv` and
+`data/processed/fewshot_examples_anonymized.json`, and stop with an instruction to
+return to notebook 01 if either required file is missing.
+
 Presidio recognizers and the English spaCy model detect names, locations, dates,
 contact details and other identifiers, then replace matching spans with `<REDACTED>`.
-Review the prepared text locally and remove remaining identifiers or identifying stories.
+Notebook 01 shows changed texts side by side for local inspection. Review additional
+rows as needed and remove remaining identifiers or identifying stories before saving.
+Rerunning preparation starts from the originals; saving again replaces previous copies.
 Automated detection can miss information and remove useful context: this is a practical
 de-identification step, not a guarantee that a person cannot be identified. Use synthetic
 data or local inference when sufficient de-identification is not feasible.
@@ -107,8 +117,11 @@ Yelp IDs. Do not bypass these helpers with a separate external client, uploads o
 conversation references. OpenAI Responses calls set `store=False`; this does not replace
 checking provider retention terms. Detection uses local models, not a remote privacy API.
 
-The original data stays in ignored `data/` files; processed labels and optional human
-annotations stay in ignored `data/processed/`. Notebook outputs can contain source text;
+The original data stays in ignored `data/` files. The prepared copies retain original
+review IDs and store/date metadata for local joins and exploration; only their texts
+are de-identified, so the files remain private and must not be published. Original
+Yelp IDs and metadata are not included in OpenAI review prompts. Processed labels and
+optional human annotations stay in ignored `data/processed/`. Notebook outputs can contain source text;
 clear outputs before sharing notebooks, and never publish the source data. Old answers
 in `.cache/llm/` may contain original text: the updated helpers do not reuse that cache.
 Remove that old cache locally if present. The new cache is also private and ignored.
@@ -117,7 +130,7 @@ Remove that old cache locally if present. The new cache is also private and igno
 
 | Folder | Notebook | What you do | Time |
 |---|---|---|---|
-| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare McDonald's and IKEA ratings, explore the IKEA reviews: stars, time, stores, length, topics | 15 min |
+| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare McDonald's and IKEA ratings, explore the IKEA reviews and prepare anonymized text copies for notebooks 02–05 | 15 min + anonymization and inspection |
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, guess and then compute the cost of classifying all reviews | 10 min, together |
 | `03_Classify_Reviews` | `classify_reviews.ipynb` | Create silver labels, compare a vague and a precise prompt, measure correctness, consistency and robustness, improve with meta prompting; then attack your own classifier with prompt injection and defend it | 25 + 10 min, in class |
 | `04_Mini_RAG` | `mini_rag.ipynb` | Index all reviews with BM25 and E5, retrieve, answer with citations, check every claim | 25 min, in class |
@@ -190,7 +203,7 @@ llm_fundamentals/
 
 | File | Purpose |
 |---|---|
-| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`, then exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. No API calls. |
+| `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`, then exploratory analysis with pandas and matplotlib: locations and ratings of both chains, weighted vs. unweighted averages, star distribution (J-shape), reviews per year and store, review length, topic search. Locally anonymizes reviews and examples, previews changes for inspection, and saves the prepared text copies. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up questions, message history, token counting with `tiktoken`, cost estimate for all IKEA reviews, comparison with the usage the API reports. |
 | `03_Classify_Reviews/classify_reviews.ipynb` | Sentiment classification from a balanced sample of up to 200 reviews (example texts and redacted duplicates removed): silver labels from `gpt-6-luna` with high reasoning effort, vague vs. precise prompt with JSON schema, agreement with the silver reference and confusion matrix, consistency over 5 runs, robustness on irony and mixed reviews, meta prompting. Then prompt injection: two attacks against an undefended prompt, the precise prompt, fixed choices (Decisions API) and fixed choices with a defence. Saves `data/processed/silver_labels.csv`. |
 | `04_Mini_RAG/mini_rag.ipynb` | Duplicate check, hybrid retrieval (BM25 + E5 + reciprocal rank fusion), token-budgeted passages and answers with local citation aliases, check of every claim, and an example of a faithful but false answer. |
@@ -208,7 +221,7 @@ Moodle (see [Data](#data)).
 | `ikea_reviews.csv` | From Moodle. All 1,743 reviews of the 8 IKEA locations, with stars, date and full text. |
 | `fewshot_examples.json` | From Moodle. Three labelled reviews used as few-shot examples in `03_Classify_Reviews` (labels by us). They are not part of any test set. |
 | `raw/` | Place for the full Yelp files, only needed to rebuild the subset. Ignored by git. |
-| `processed/` | Silver labels, optional independently annotated `human_labels.csv` and complete question/review annotations `rag_relevance.csv`. Ignored by git. |
+| `processed/` | Prepared review/example copies from notebook 01, silver labels, optional independently annotated `human_labels.csv` and complete question/review annotations `rag_relevance.csv`. Ignored by git. |
 
 ### `scripts/`: data preparation
 
@@ -291,6 +304,8 @@ Files created while you work, all ignored by git:
 | Path | Content |
 |---|---|
 | `.cache/llm-v2/` | Completed answers to sanitized requests and empty coordination lock files. Removing cached answers causes new paid requests. |
+| `data/processed/ikea_reviews_anonymized.csv` | Prepared review texts from notebook 01; original IDs and analysis metadata stay local. |
+| `data/processed/fewshot_examples_anonymized.json` | Prepared examples from notebook 01. |
 | `data/processed/silver_labels.csv` | Silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
 
 ## Licence
