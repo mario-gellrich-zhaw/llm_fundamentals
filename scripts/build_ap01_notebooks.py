@@ -13,6 +13,7 @@ import io
 import json
 import os
 import queue
+import re
 import uuid
 from pathlib import Path
 
@@ -28,7 +29,7 @@ SOLUTION_NB = AP / 'AP01_Large_Language_Models_Musterloesung.ipynb'
 
 TITLE = """# Arbeitspaket (AP) 1: Large Language Models
 
-**Übungsprüfung – 40 Punkte, Richtzeit 40 Minuten**"""
+**Übungsprüfung – 40 Punkte**"""
 
 PERSONAL = """### Persönliche Angaben (bitte ergänzen) und Prüfungsregeln
 
@@ -45,16 +46,14 @@ PERSONAL = """### Persönliche Angaben (bitte ergänzen) und Prüfungsregeln
 
 GRADING = """## Bewertungskriterien
 
-| Teil | Aufgaben | Punkte | Richtzeit |
-|---|---|---:|---:|
-| Einlesen und Setup ausführen | – | – | 3 Min. |
-| A: Konzeptfragen mit Datenbezug | A1–A3 | 12 | 13 Min. |
-| B: Fehleranalyse und Korrektur | B1–B2 | 16 | 11 Min. |
-| C: Python-Code ergänzen und Ergebnisse einordnen | C1–C3 | 12 | 11 Min. |
-| Schlusskontrolle | – | – | 2 Min. |
-| **Total** | **8 Aufgaben** | **40** | **40 Min.** |
+| Teil | Aufgaben | Punkte |
+|---|---|---:|
+| A: Konzeptfragen mit Datenbezug | A1–A3 | 12 |
+| B: Fehleranalyse und Korrektur | B1–B2 | 16 |
+| C: Python-Code ergänzen und Ergebnisse einordnen | C1–C3 | 12 |
+| **Total** | **8 Aufgaben** | **40** |
 
-Die Richtzeiten setzen voraus, dass Sie die Übungen 01–05 bearbeitet haben und die Python-Umgebung bereit ist. Antworten Sie knapp: pro Teilfrage ein bis zwei Sätze oder Stichpunkte; bei Begründungen zu Codefehlern genügt je ein Satz.
+Antworten Sie knapp: pro Teilfrage ein bis zwei Sätze oder Stichpunkte; bei Begründungen zu Codefehlern genügt je ein Satz.
 
 ### Bewertungsschema
 
@@ -85,7 +84,6 @@ Der fiktive Möbelhändler **«WohnWerk»** möchte Kundenbewertungen (Reviews) 
 |---|---|---|
 | `reviews.csv` | `df` | 300 Reviews (Englisch) mit `review_id`, `stars` (1–5), `text`, `n_tokens` (Anzahl Tokens des Texts) und `gold_label` (korrektes Label für die Stimmung des **Texts**). Das Setup ergänzt `stars_label`, abgeleitet aus den Sternen: 1–2 `negative`, 3 `mixed`, 4–5 `positive`. |
 | `llm_runs.csv` | `df_runs` | Labels von `gpt-6-luna` mit dem **präzisen Prompt** (Instruktionen, Few-Shot-Beispiele, JSON Schema). Jedes Review wurde fünfmal klassifiziert: Durchlauf (`run`) 1–5. |
-| `llm_answers.csv` | `df_answers` | Freitext-Antworten von `gpt-6-luna` auf einen einfachen Prompt: eine kurze Begründung und am Schluss `Overall:` mit dem Label. |
 | `model_comparison.csv` | `df_models` | 60 Reviews, klassifiziert von beiden Modellen: `label`, `seconds` (Antwortzeit in Sekunden), `input_tokens` und `output_tokens` (Anzahl Tokens des Aufrufs). |
 
 **Accuracy:** Anteil der Reviews, deren vorhergesagtes Label mit dem Referenzlabel übereinstimmt.
@@ -123,12 +121,10 @@ print('Reviews:', df.shape)
 df.head()""",
     """# Simulierte Modellausgaben laden.
 df_runs = pd.read_csv(EXAM_DIR / 'llm_runs.csv')
-df_answers = pd.read_csv(EXAM_DIR / 'llm_answers.csv')
 df_models = pd.read_csv(EXAM_DIR / 'model_comparison.csv')
 
 # Umfang der Dateien anzeigen.
 print('llm_runs:', df_runs.shape)
-print('llm_answers:', df_answers.shape)
 print('model_comparison:', df_models.shape)""",
     """# Feste Prüfungsannahmen in USD pro 1 Million Tokens (nicht aktuelle Listenpreise).
 PRICE_INPUT_PER_M = 0.10
@@ -142,7 +138,7 @@ START_BANNER = """---
 <span style="font-size:15px; font-weight:normal;">Tragen Sie Ihre Antworten direkt in die vorgesehenen Zellen ein und führen Sie alle Code-Zellen aus.</span>
 </div>
 
-Die Aufgaben sind unabhängig voneinander lösbar. Verändern Sie die im Setup geladenen DataFrames nicht. In Teil B korrigieren Sie den fehlerhaften Code direkt in der Codezelle. In Teil C ergänzen Sie die Stellen mit `# TODO`; Zeilen unter «Vorgegeben» ändern Sie nicht.
+Die Aufgaben sind unabhängig voneinander lösbar. Verändern Sie die im Setup geladenen DataFrames nicht. In Teil B bleibt der fehlerhafte Originalcode im Aufgabentext sichtbar. Tragen Sie die korrigierte Fassung in die zugehörige Codezelle ein und führen Sie diese aus. In Teil C ergänzen Sie die Stellen mit `# TODO`; Zeilen unter «Vorgegeben» ändern Sie nicht.
 
 **Schriftliche Antworten und Begründungen** tragen Sie jeweils in die Markdown-Zelle «Ihre Antwort / Begründung» unter der Aufgabe ein, Code in die zugehörige Codezelle."""
 
@@ -162,7 +158,7 @@ print('Zeitpunkt:', datetime.now().isoformat(timespec='seconds'))"""
 # --------------------------------------------------------------------------
 
 A1 = dict(
-    question="""### A1 (4 Punkte · ca. 4 Minuten)
+    question="""### A1 (4 Punkte)
 
 Der Chatbot «WohnWerk-Assistent» ruft `gpt-6-luna` über die API auf. Auszug aus dem Log eines Gesprächs:
 
@@ -199,7 +195,7 @@ def a2_examples():
 A2_ROWS, A2_EQUAL, A2_N = a2_examples()
 
 A2 = dict(
-    question=f"""### A2 (4 Punkte · ca. 4 Minuten)
+    question=f"""### A2 (4 Punkte)
 
 Jedes Review hat zwei Labels: `stars_label` ist aus den Sternen abgeleitet, `gold_label` beschreibt die Stimmung des Texts. Bei {A2_EQUAL} von {A2_N} Reviews ({A2_EQUAL / A2_N * 100:.0f} %) sind die beiden Labels gleich, bei {A2_N - A2_EQUAL} Reviews nicht. Zwei Beispiele:
 
@@ -218,7 +214,7 @@ b) Beide richtigen Antworten würden als **Fehler** gezählt, weil sie von `star
 )
 
 A3 = dict(
-    question="""### A3 (4 Punkte · ca. 5 Minuten)
+    question="""### A3 (4 Punkte)
 
 Review `R147` (1 Stern) lautet:
 
@@ -235,68 +231,97 @@ b) Falsch. Das JSON Schema legt nur die **Form** der Antwort fest, nicht die Wah
 )
 
 B1 = dict(
-    question_head="""### B1 (8 Punkte · ca. 5 Minuten)
+    question_head="""### B1 (8 Punkte)
 
 Berechnen Sie die Input-Kosten für alle 300 Reviews. Jeder Aufruf enthält **185 Prompt-Tokens plus die Review-Tokens** (`n_tokens`). Der Preis gilt pro **1 Million Tokens**.
 
-Korrigieren Sie die **zwei Fehler** in der Codezelle. Begründen Sie jede Änderung in einem Satz.""",
-    faulty="""PROMPT_TOKENS = 185
+Der unten gezeigte Code enthält **zwei Fehler**. Schreiben Sie die korrigierte Fassung in die Codezelle und führen Sie sie aus. Die Kommentare sind als Gerüst vorgegeben. Begründen Sie jede Änderung in einem Satz.""",
+    faulty="""# Prompt-Länge je Aufruf vorgeben.
+PROMPT_TOKENS = 185
+
+# Input-Tokens aller Reviews berechnen.
 input_tokens_B1 = df['n_tokens'].sum() + PROMPT_TOKENS
+
+# Input-Kosten in USD berechnen.
 cost_sample_B1 = input_tokens_B1 / 1_000 * PRICE_INPUT_PER_M
+
+# Ergebnis ausgeben.
 print('Kosten (USD):', round(cost_sample_B1, 4))""",
     answer="""1. Die 185 Prompt-Tokens fallen für jedes Review an: mit `len(df)` multiplizieren.
 2. Der Preis gilt pro Million Tokens: durch `1_000_000` teilen.
 
 Ergebnis: 65'830 Input-Tokens, rund **USD 0.0066**.""",
-    code="""PROMPT_TOKENS = 185
+    code="""# Prompt-Länge je Aufruf vorgeben.
+PROMPT_TOKENS = 185
+
+# Input-Tokens aller Reviews berechnen.
 input_tokens_B1 = df['n_tokens'].sum() + PROMPT_TOKENS * len(df)
+
+# Input-Kosten in USD berechnen.
 cost_sample_B1 = input_tokens_B1 / 1_000_000 * PRICE_INPUT_PER_M
+
+# Ergebnis ausgeben.
 print('Kosten (USD):', round(cost_sample_B1, 4))""",
 )
 
 B2 = dict(
-    question_head="""### B2 (8 Punkte · ca. 6 Minuten)
+    question_head="""### B2 (8 Punkte)
 
-Vergleichen Sie den **vagen** und den **präzisen Prompt** anhand der Accuracy gegenüber `gold_label`.
-Die Vorhersagen sind vorgegeben: `vague` nutzt die einfache Freitext-Regel aus Übung 03, `precise` die Labels aus Durchlauf 1.
+Ein LLM soll die **Stimmung des Review-Texts** als `positive`, `negative` oder `mixed` klassifizieren. `mixed` bedeutet deutliches Lob **und** deutliche Kritik.
 
-Die Accuracy-Zeile enthält **zwei Fehler**. Korrigieren und begründen Sie diese. Welcher Prompt ist genauer?""",
-    faulty="""# Vorgegeben: dieselbe Freitext-Regel wie in Übung 03.
-def first_label(answer):
-    words = re.findall(r'positive|negative|mixed', answer.lower())
-    if words:
-        return words[0]
-    return 'none'
+Ein Review mit **4 Sternen** lautet:
 
-# Vorgegeben: beide Vorhersagen mit den Referenzlabels verbinden.
-df_B2 = df.merge(df_answers, on='review_id')
-precise_B2 = df_runs[df_runs['run'] == 1][['review_id', 'label']]
-df_B2 = df_B2.merge(precise_B2, on='review_id').rename(columns={'label': 'precise'})
-df_B2['vague'] = [first_label(answer) for answer in df_B2['answer']]
+> The chair is comfortable, but one leg arrived broken and customer service did not help.
 
-for column in ['vague', 'precise']:
-    accuracy = accuracy_score(df_B2['stars_label'], df_B2['precise'])
-    print(column, round(accuracy, 3))""",
-    answer="""1. `gold_label` statt `stars_label`: Bewertet wird die Stimmung des Texts.
-2. `df_B2[column]` statt immer `df_B2['precise']`: Jeder Prompt muss mit seinen eigenen Vorhersagen bewertet werden.
+Der folgende Code legt Prompt und Antwortformat fest. Er enthält **zwei fachliche Fehler**, einen im Prompt und einen im JSON-Schema.
 
-Der präzise Prompt ist genauer: **0.940** gegenüber **0.497** beim vagen Prompt. Die einfache Freitext-Regel kann z.B. bei «not positive» das falsche Label lesen.""",
+Schreiben Sie die korrigierte Fassung in die Codezelle. Begründen Sie beide Änderungen und geben Sie die für dieses Review erwartete JSON-Antwort an. Die Kommentare sind als Gerüst vorgegeben; ein API-Aufruf ist nicht nötig.""",
+    faulty="""# Prompt für die Klassifikation festlegen.
+instructions_B2 = (
+    'Classify customer review sentiment using the star rating, not the review text. '
+    'Use positive for praise, negative for criticism, and mixed for both. '
+    'Return a JSON object with the field sentiment.'
+)
+
+# Antwortformat und zulässige Labels festlegen.
+schema_B2 = {
+    'type': 'object',
+    'properties': {'sentiment': {'type': 'string', 'enum': ['positive', 'negative']}},
+    'required': ['sentiment'],
+    'additionalProperties': False,
+}
+
+# Zulässige Labels zur Kontrolle ausgeben.
+print('Zulässige Labels:', schema_B2['properties']['sentiment']['enum'])""",
+    answer="""1. **Den Text statt der Sterne bewerten:** Im Prompt muss stehen, dass die Stimmung des Review-Texts zählt und die Sterne ignoriert werden. Hier enthält der Text trotz 4 Sternen deutliche Kritik.
+2. **`mixed` im Schema zulassen:** Die erlaubten Werte müssen `positive`, `negative` und `mixed` umfassen. Sonst kann das Modell die verlangte gemischte Stimmung nicht schema-konform ausgeben.
+
+Erwartete Antwort: `{"sentiment": "mixed"}`. Der Text lobt den bequemen Stuhl und kritisiert den Defekt sowie den Kundenservice. Ein korrigierter Prompt mit passendem Schema ermöglicht die richtige Antwort, garantiert aber nicht deren inhaltliche Richtigkeit.""",
 )
 B2['code'] = B2['faulty'].replace(
-    "accuracy_score(df_B2['stars_label'], df_B2['precise'])",
-    "accuracy_score(df_B2['gold_label'], df_B2[column])"
+    'using the star rating, not the review text', 'using the review text; ignore the star rating'
+).replace(
+    "'enum': ['positive', 'negative']", "'enum': ['positive', 'negative', 'mixed']"
 )
 
 C1 = dict(
-    question="""### C1 (4 Punkte · ca. 3 Minuten)
+    question="""### C1 (4 Punkte)
 
-`runs_C1` enthält fünf Labels je Review (eine Spalte je Durchlauf).
+Dasselbe Modell klassifiziert jeden Review **fünfmal mit demselben Prompt**. `runs_C1` enthält eine Zeile je Review und eine Spalte je Durchlauf.
 
-Ergänzen Sie `changed_C1`: `True`, wenn mehr als ein verschiedenes Label vorkommt.
-*Tipp: `runs_C1.nunique(axis=1)` zählt die verschiedenen Labels je Zeile.*
+**a) Code ergänzen (2 Punkte):** Ergänzen Sie die mit `TODO` markierte Vergleichszahl in `changed_C1`. Die Zeile soll jeden Review wie folgt markieren:
 
-Belegt ein gleichbleibendes Label auch, dass es korrekt ist? Begründen Sie kurz und nennen Sie eine Massnahme für Reviews mit wechselndem Label.""",
-    answer="""Bei **22.7 %** der Reviews wechselt das Label. Ein gleichbleibendes Label belegt nur Konsistenz: Ein Modell kann immer denselben Fehler machen. Korrektheit wird gegenüber Gold Labels gemessen. Reviews mit wechselndem Label können von einer Person geprüft werden.""",
+- `False`, wenn alle fünf Durchläufe dasselbe Label liefern.
+- `True`, wenn die fünf Labels nicht alle gleich sind.
+
+Beispiel: fünfmal `positive` ergibt `False`; viermal `positive` und einmal `mixed` ergibt `True`.
+
+*Tipp: `runs_C1.nunique(axis=1)` zählt die verschiedenen Labels pro Review. Die vorgegebene Ausgabe zeigt den Anteil der mit `True` markierten Reviews.*
+
+**b) Ergebnis einordnen (2 Punkte):** Ein Review erhält fünfmal `negative`. Ist damit bewiesen, dass dieses Label inhaltlich richtig ist? Begründen Sie kurz. Nennen Sie ausserdem eine Massnahme für Reviews, deren Labels in den fünf Durchläufen nicht alle gleich sind.""",
+    answer="""a) `changed_C1 = runs_C1.nunique(axis=1) > 1` markiert Reviews mit mindestens zwei verschiedenen Labels. Die Ausgabe **0.227** bedeutet: Bei rund **22.7 %** der Reviews stimmen nicht alle fünf Labels überein.
+
+b) Nein. Fünfmal `negative` zeigt **Konsistenz**, aber das Modell könnte fünfmal denselben Fehler machen. Für die Korrektheit braucht es einen Vergleich mit verlässlichen Referenzlabels. Reviews mit unterschiedlichen Labels können von einer Person geprüft werden.""",
     code="""# Vorgegeben: fünf Durchläufe je Review.
 runs_C1 = df_runs.pivot(index='review_id', columns='run', values='label')
 
@@ -306,14 +331,15 @@ changed_C1 = runs_C1.nunique(axis=1) > 1
 print('Anteil mit wechselndem Label:', round(changed_C1.mean(), 3))""",
 )
 C1['skeleton'] = C1['code'].replace(
-    'changed_C1 = runs_C1.nunique(axis=1) > 1', 'changed_C1 = None  # TODO'
+    'changed_C1 = runs_C1.nunique(axis=1) > 1',
+    'changed_C1 = runs_C1.nunique(axis=1) > ...  # TODO: Vergleichszahl ergänzen.'
 )
 
 C2 = dict(
-    question="""### C2 (4 Punkte · ca. 4 Minuten)
+    question="""### C2 (4 Punkte)
 
 Suchen Sie Reviews zu **Montageproblemen**. BM25-Index und Suchanfrage sind vorgegeben.
-Ergänzen Sie die Berechnung der BM25-Scores; die Top 5 werden automatisch ausgegeben.
+Ergänzen Sie die beiden `TODO`-Stellen: Übergeben Sie die mit `tokenize()` zerlegte Suchanfrage an `get_scores()` und wählen Sie anschliessend die fünf Reviews mit den höchsten BM25-Scores aus.
 
 a) Warum kann eine Suche mit **Embeddings** passende Reviews finden, die BM25 übersieht?
 
@@ -333,18 +359,24 @@ df_C2 = df[['review_id', 'text']].copy()
 
 df_C2['bm25'] = bm25_C2.get_scores(tokenize(query_C2))
 
-# Vorgegeben: die fünf besten Treffer ausgeben.
-print(df_C2.nlargest(5, 'bm25').round(2).to_string(index=False))""",
+# Die fünf besten Treffer auswählen.
+output_C2 = df_C2.nlargest(5, 'bm25')
+
+# Vorgegeben: Treffer ausgeben.
+print(output_C2.round(2).to_string(index=False))""",
 )
 C2['skeleton'] = C2['code'].replace(
     "df_C2['bm25'] = bm25_C2.get_scores(tokenize(query_C2))",
-    "df_C2['bm25'] = None  # TODO"
+    "df_C2['bm25'] = bm25_C2.get_scores(...)  # TODO: Suchanfrage tokenisieren und übergeben."
+).replace(
+    "output_C2 = df_C2.nlargest(5, 'bm25')",
+    "output_C2 = df_C2.nlargest(..., 'bm25')  # TODO: Anzahl der Treffer ergänzen."
 )
 
 C3 = dict(
-    question="""### C3 (4 Punkte · ca. 4 Minuten)
+    question="""### C3 (4 Punkte)
 
-Beide Modelle haben dieselben 60 Reviews klassifiziert. Ergänzen Sie die **Accuracy gegenüber `gold_label`** für jedes Modell mit `accuracy_score(...)`.
+Beide Modelle haben dieselben 60 Reviews klassifiziert. Im vorgegebenen Code enthält `test_C3` jeweils die Daten eines Modells. Ergänzen Sie die beiden mit `TODO` markierten Spaltennamen im Aufruf von `accuracy_score()`: zuerst die Referenzlabels (`gold_label`), dann die Vorhersagen (`label`).
 
 Zusätzlich sind aus denselben Daten vorgegeben:
 
@@ -368,7 +400,10 @@ for model in ['gpt-6-luna', 'qwen3:1.7b']:
 )
 C3['skeleton'] = C3['code'].replace(
     "accuracy = accuracy_score(test_C3['gold_label'], test_C3['label'])",
-    'accuracy = None  # TODO'
+    "accuracy = accuracy_score(\n"
+    "        test_C3[...],  # TODO: Spaltenname der Referenzlabels.\n"
+    "        test_C3[...],  # TODO: Spaltenname der Vorhersagen.\n"
+    "    )"
 )
 
 # --------------------------------------------------------------------------
@@ -377,11 +412,18 @@ C3['skeleton'] = C3['code'].replace(
 
 
 def md(text):
-    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'markdown', 'metadata': {}, 'source': text}
+    task = re.match(r'### ([ABC][1-3]) \((\d+) Punkte', text)
+    metadata = {'task_id': task[1], 'points': int(task[2])} if task else {}
+    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'markdown', 'metadata': metadata, 'source': text}
 
 
-def code(text):
-    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'code', 'metadata': {}, 'execution_count': None, 'outputs': [], 'source': text}
+def code(text, task_id=None):
+    metadata = {'task_id': task_id} if task_id else {}
+    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'code', 'metadata': metadata, 'execution_count': None, 'outputs': [], 'source': text}
+
+
+def correction_skeleton(task):
+    return '\n\n'.join(line for line in task['faulty'].splitlines() if line.startswith('#'))
 
 
 def faulty_output(src):
@@ -403,7 +445,8 @@ def faulty_output(src):
 def b_question(task):
     return (
         task['question_head']
-        + '\n\n'
+        + '\n\n**Fehlerhafter Originalcode:**\n\n```python\n'
+        + task['faulty'] + '\n```\n\n'
         + '**Ausgabe des fehlerhaften Codes** (nicht das gesuchte Ergebnis):\n\n'
         + '```text\n' + faulty_output(task['faulty']) + '\n```'
     )
@@ -421,15 +464,15 @@ def build(solution):
     for task in (A1, A2, A3):
         cells += [md(task['question']), answer_cell(task)]
         if 'code' in task:
-            cells.append(code(task['code'] if solution else task['skeleton']))
+            cells.append(code(task['code'] if solution else task['skeleton'], task['question'].split()[1]))
     cells.append(md('---\n## Teil B – Fehleranalyse (16 Punkte)'))
     for task in (B1, B2):
         cells += [md(b_question(task)), answer_cell(task),
-                  code(task['code'] if solution else task['faulty'])]
-    cells.append(md('---\n## Teil C – Python-Code schreiben oder ergänzen (12 Punkte)'))
+                  code(task['code'] if solution else correction_skeleton(task), task['question_head'].split()[1])]
+    cells.append(md('---\n## Teil C – Python-Code ergänzen (12 Punkte)'))
     for task in (C1, C2, C3):
         cells += [md(task['question']), answer_cell(task),
-                  code(task['code'] if solution else task['skeleton'])]
+                  code(task['code'] if solution else task['skeleton'], task['question'].split()[1])]
     cells += [md('---\n### Notebook-Footer (vorgegeben)'), code(FOOTER_CODE)]
     return {
         'cells': cells,
