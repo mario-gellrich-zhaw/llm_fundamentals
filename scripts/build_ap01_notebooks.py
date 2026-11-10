@@ -13,6 +13,7 @@ import io
 import json
 import os
 import queue
+import uuid
 from pathlib import Path
 
 from jupyter_client.manager import start_new_kernel
@@ -72,22 +73,22 @@ Alternative, fachlich korrekte Lösungswege werden ebenfalls als korrekt gewerte
 
 DATA_NOTES = """## Hinweise zu den Daten
 
-Der fiktive Möbelhändler **«WohnWerk»** (Filialen in Zürich, Bern, Basel und Luzern) möchte Kundenbewertungen (Reviews) automatisch nach ihrer Stimmung (Sentiment) einordnen und durchsuchen. Dazu wurde das API-Modell `gpt-6-luna` getestet, zum Vergleich auch das lokale Open-Weight-Modell `qwen3:1.7b` (Ollama).
+Der fiktive Möbelhändler **«WohnWerk»** (Filialen in Zürich, Bern, Basel und Luzern) möchte Kundenbewertungen (Reviews) automatisch nach ihrer Stimmung (Sentiment) einordnen und durchsuchen. Für diese Übung werden Ergebnisse des API-Modells `gpt-6-luna` und des lokalen Open-Weight-Modells `qwen3:1.7b` (Ollama) simuliert.
 
-Die Daten sind synthetisch. **Alle Modellausgaben liegen bereits als Dateien vor: Im Notebook wird kein Language Model und keine API aufgerufen.**
+Die Daten und alle Modellergebnisse sind synthetisch; es wurden keine realen Modelle gemessen. **Alle Modellausgaben liegen bereits als Dateien vor: Im Notebook wird kein Language Model und keine API aufgerufen.**
 
 | Datei | Inhalt |
 |---|---|
 | `reviews.csv` | 300 Reviews (Englisch): `review_id`, `store`, `date`, `stars` (1–5), `text`, `n_tokens` (Anzahl Tokens des Texts, Tokenizer `o200k_base`) und `gold_label` |
-| `llm_runs.csv` | Labels von `gpt-6-luna` mit einem präzisen Prompt und JSON Schema. Jedes Review wurde **5-mal** klassifiziert (`run` 1–5); eine Zeile je Review und Durchlauf. |
-| `llm_answers.csv` | Freitext-Antworten von `gpt-6-luna` auf einen einfachen Prompt (ein Durchlauf). Der Prompt verlangte eine kurze Begründung und am Schluss `Overall: positive`, `Overall: negative` oder `Overall: mixed`. |
-| `model_comparison.csv` | 60 Reviews, klassifiziert von `gpt-6-luna` (API) und `qwen3:1.7b` (lokal, Codespace mit 2 CPU-Kernen): `label`, `seconds` (Antwortzeit je Review), `input_tokens`, `output_tokens` (inkl. Reasoning Tokens) |
+| `llm_runs.csv` | Simulierte Labels für einen präzisen Prompt mit JSON Schema. Jedes Review hat **5** simulierte Durchläufe (`run` 1–5); eine Zeile je Review und Durchlauf. |
+| `llm_answers.csv` | Simulierte Freitext-Antworten für `gpt-6-luna` auf einen einfachen Prompt (ein Durchlauf). Der Prompt verlangte eine kurze Begründung und am Schluss `Overall: positive`, `Overall: negative` oder `Overall: mixed`. |
+| `model_comparison.csv` | 60 Reviews mit simulierten Ausgaben für `gpt-6-luna` (API) und `qwen3:1.7b` (lokal, Codespace mit 2 CPU-Kernen): `label`, `seconds` (Antwortzeit je Review), `input_tokens`, `output_tokens` (inkl. Reasoning Tokens) |
 
-**Labels:** `positive` (überwiegend zufrieden), `negative` (überwiegend unzufrieden), `mixed` (deutlich positiv **und** deutlich negativ). Die `gold_label` wurden von Hand vergeben und beschreiben die Stimmung des **Texts**, unabhängig von den Sternen. Der Setup erstellt zusätzlich `stars_label` aus den Sternen (1–2 `negative`, 3 `mixed`, 4–5 `positive`).
+**Labels:** `positive` (überwiegend zufrieden), `negative` (überwiegend unzufrieden), `mixed` (deutlich positiv **und** deutlich negativ). Die `gold_label` sind konstruierte Referenzlabels für diese synthetischen Texte und beschreiben die Stimmung des **Texts**, unabhängig von den Sternen. Der Setup erstellt zusätzlich `stars_label` aus den Sternen (1–2 `negative`, 3 `mixed`, 4–5 `positive`).
 
-Preise von `gpt-6-luna`: USD 0.10 pro 1 Million Input-Tokens, USD 0.40 pro 1 Million Output-Tokens. Das lokale Modell verursacht keine API-Kosten.
+Feste Preisannahmen für diese Prüfung (keine aktuelle Preisauskunft): USD 0.10 pro 1 Million Input-Tokens, USD 0.40 pro 1 Million Output-Tokens. Das lokale Modell verursacht keine API-Kosten.
 
-Öffnen Sie das Notebook im Ordner 06_Example_Exam_Questions, sodass die Dateien im Arbeitsverzeichnis liegen."""
+Starten Sie das Notebook im Repository-Stamm oder im Ordner 06_Example_Exam_Questions. Das Setup löst beide Datenpfade auf."""
 
 SETUP_INTRO = """## Setup (vorgegeben, nicht bewertet)
 
@@ -106,7 +107,9 @@ from sklearn.metrics import accuracy_score
 # Aktuelles Arbeitsverzeichnis anzeigen.
 print('Working directory:', os.getcwd())""",
     """# Reviews mit Gold Labels laden.
-df = pd.read_csv('reviews.csv')
+from pathlib import Path
+EXAM_DIR = Path.cwd() if (Path.cwd() / 'reviews.csv').exists() else Path.cwd() / '06_Example_Exam_Questions'
+df = pd.read_csv(EXAM_DIR / 'reviews.csv')
 
 # Sterne als einfaches Label: 1–2 negative, 3 mixed, 4–5 positive.
 df['stars_label'] = df['stars'].map(
@@ -117,15 +120,15 @@ df['stars_label'] = df['stars'].map(
 print('Reviews:', df.shape)
 df.head()""",
     """# Simulierte Modellausgaben laden.
-df_runs = pd.read_csv('llm_runs.csv')
-df_answers = pd.read_csv('llm_answers.csv')
-df_models = pd.read_csv('model_comparison.csv')
+df_runs = pd.read_csv(EXAM_DIR / 'llm_runs.csv')
+df_answers = pd.read_csv(EXAM_DIR / 'llm_answers.csv')
+df_models = pd.read_csv(EXAM_DIR / 'model_comparison.csv')
 
 # Umfang der Dateien anzeigen.
 print('llm_runs:', df_runs.shape)
 print('llm_answers:', df_answers.shape)
 print('model_comparison:', df_models.shape)""",
-    """# Preise von gpt-6-luna in USD pro 1 Million Tokens.
+    """# Feste Prüfungsannahmen in USD pro 1 Million Tokens (nicht aktuelle Listenpreise).
 PRICE_INPUT_PER_M = 0.10
 PRICE_OUTPUT_PER_M = 0.40""",
 ]
@@ -336,7 +339,7 @@ Die Accuracy von Durchlauf 1 und des Mehrheitsentscheids sowie die Gold Labels d
 Der Produktverantwortliche folgert: *«Bei fast einem Viertel der Reviews ändert sich das Label – das Modell ist unbrauchbar.»* Beurteilen Sie die Aussage anhand der Ausgabe und nennen Sie eine Massnahme für den Einsatz.""",
     answer="""Ergebnis: Bei 0.227 der Reviews (68 von 300) ändert sich das Label. Accuracy Durchlauf 1: 0.940, Mehrheitsentscheid: 0.977.
 
-Die Aussage ist zu pauschal: Die Wechsel betreffen vor allem **schwierige Fälle**: 40 der 68 Reviews sind `mixed` (von insgesamt 60), dazu negative Reviews mit Ironie oder Prompt Injection. Ein einzelner Durchlauf ist trotzdem in 94 % der Fälle richtig. Die Instabilität zeigt an, wo das Modell unsicher ist.
+Die Aussage ist zu pauschal: Die Wechsel betreffen vor allem **schwierige Fälle**: 40 der 68 Reviews sind `mixed` (von insgesamt 60), dazu negative Reviews mit Ironie oder Prompt Injection. Ein einzelner Durchlauf ist trotzdem in 94 % der Fälle richtig. Die Instabilität kann schwierige Fälle markieren, ist aber keine kalibrierte Unsicherheit: Auch ein konstant falsches Label ist möglich.
 
 Massnahme (eine genügt): Mehrheitsentscheid über mehrere Durchläufe (hier +3.7 Prozentpunkte, aber fünffache Kosten); Reviews mit wechselndem Label zur Prüfung an eine Person weiterleiten; `mixed` im Prompt genauer definieren und auf den Development Data erneut messen.""",
     code="""# Vorgegeben: eine Zeile je Review, eine Spalte je Durchlauf.
@@ -486,11 +489,11 @@ print(output_C3.round(3).to_string(index=False))""",
 
 
 def md(text):
-    return {'cell_type': 'markdown', 'metadata': {}, 'source': text}
+    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'markdown', 'metadata': {}, 'source': text}
 
 
 def code(text):
-    return {'cell_type': 'code', 'metadata': {}, 'execution_count': None, 'outputs': [], 'source': text}
+    return {'id': uuid.uuid4().hex[:8], 'cell_type': 'code', 'metadata': {}, 'execution_count': None, 'outputs': [], 'source': text}
 
 
 def faulty_output(src):
@@ -604,6 +607,46 @@ def save(nb, path):
     print('Written:', path.relative_to(AP.parent))
 
 
+CONCEPT_CHECKS = [
+    ("Generation, Training und Sampling (Folien 10–14)",
+     "Was unterscheidet Pretraining, Instruction Tuning und Preference Tuning? Warum können identische Prompts verschiedene Antworten erzeugen? Erklären Sie Temperature und Top-p sowie eine Massnahme für reproduzierbare Vergleiche.",
+     "Pretraining lernt die nächste Token-Vorhersage, Instruction Tuning folgt guten Antwortbeispielen, Preference Tuning bevorzugt besser bewertete Antworten. Sampling zieht Tokens aus einer Verteilung; Temperature verändert deren Schärfe, Top-p begrenzt die Auswahl auf eine kumulative Wahrscheinlichkeitsmasse. Modell-Snapshots und Einstellungen festhalten, mehrere Runs messen. Temperature 0 garantiert keine identischen Ergebnisse. Gewichte ändern sich nicht während eines Chats."),
+    ("Wissen und Halluzination (Folien 14, 49)",
+     "Ein Review behauptet, die Fleischbällchen seien italienisch. Eine RAG-Antwort wiederholt dies mit korrekter Quellenangabe. Ist die Antwort damit wahr?",
+     "Nein. Faithfulness bedeutet Unterstützung durch die Quelle, nicht Wahrheit in der Welt. Reviews sind subjektive Berichte und keine verlässliche Quelle für Rezeptur oder Herkunft. Eine offizielle Produkt-/Rezeptquelle prüfen; widersprüchliche oder fehlende Belege kenntlich machen. Das Modell optimiert plausible Fortsetzungen, keine garantierte Wahrheit."),
+    ("Tokenbudget und Reasoning (Folien 16–21, 31–32)",
+     "Warum sind Wörter keine verlässliche Kosteneinheit? Welche Tokens zählen zum Kontext und zu den Kosten? Lohnt sich hohes Reasoning immer?",
+     "Tokenisierung hängt von Modellfamilie, Sprache und Schreibweise ab. Kontext umfasst Instruktionen, Daten, History und Output einschliesslich Reasoning. Output-Usage enthält Reasoning bereits; nicht doppelt zählen. API-Usage ist für Abrechnung massgeblich; Input und Output haben getrennte Preise. Mehr Reasoning anhand von Qualität, Latenz und Kosten gegenprüfen."),
+    ("Gold Labels und Cohen’s Kappa (Folien 33–35)",
+     "Zwei Personen stimmen bei 8 von 10 Reviews überein. Ihre Labelanteile sind (0.4, 0.4, 0.2) und (0.5, 0.3, 0.2). Berechnen und interpretieren Sie Kappa. Warum genügt die Übereinstimmung mit Silver Labels nicht?",
+     "Zufallsübereinstimmung = 0.4×0.5 + 0.4×0.3 + 0.2×0.2 = 0.36. Kappa = (0.80−0.36)/(1−0.36) = 0.6875. Erst unabhängig annotieren und Übereinstimmung messen, danach Differenzen klären. Silver Labels können systematische Modellfehler enthalten; derselbe Modelltyp als Referenz und Kandidat kann bevorzugt werden. Konsistente Fehler sind möglich: Run-Stabilität ist keine kalibrierte Sicherheit."),
+    ("Entwicklung, Test und Evidenz (Folien 24, 28–37)",
+     "Woher dürfen Few-Shot-Beispiele stammen? Wie prüfen Sie einen neuen Prompt und Aspektlabels mit Belegzitaten?",
+     "Beispiele vor Sampling aus dem Evaluationspool entfernen; keine Überschneidung mit Development oder Test, auch nicht nach Anonymisierung. Prompt auf Development verbessern, finales Testset nicht zur Auswahl verwenden. Formatfehler/Refusals zählen. Aspektlabels nur mit erlaubten Aspekten und exakten Quellenzitaten anfordern; Zitatvorkommen prüfen und inhaltliche Unterstützung separat lesen."),
+    ("RAG und Judge (Folien 36, 47–49)",
+     "Von zehn relevant gelabelten Quellen findet die Suche sieben in den Top 10. Berechnen Sie Recall@10. Warum genügt ein gültiger Citation-ID-Check nicht? Welche Judge-Biases kennen Sie?",
+     "Recall@10 = 7/10 = 0.7, sofern die relevanten Quellen vollständig und unabhängig gelabelt wurden. Ein existierender Quellenverweis kann eine ungestützte Behauptung begleiten. Claims einzeln gegen vollständige Passagen prüfen. Lange Quellen innerhalb des Embedding-Tokenbudgets überlappend aufteilen. LLM-Judges können Position, Länge oder eigenen Stil bevorzugen; Reihenfolge tauschen, Rubrik/Länge festlegen und gegen Menschen prüfen."),
+    ("Function Calling und Agents (Folien 38–40, 50–51)",
+     "Ein Agent soll Beschwerden lesen und dem Filialleiter eine E-Mail senden. Was führt das Modell aus, was Ihre Anwendung? Warum ist eine Injection hier gefährlicher als beim Klassifizieren?",
+     "Das Modell schlägt strukturierte Tool-Aufrufe vor; die Anwendung validiert Argumente und Berechtigungen und führt sie aus. Nur nötige Tools bereitstellen, Lese- vor Schreibrechten, Entwurf vor Versand. Eine Person bestätigt Senden, Zahlen, Löschen oder Publizieren. Schritte, Budget und Zeit begrenzen und Calls protokollieren. Eine Injection kann Datenabfluss oder Aktionen auslösen, statt nur ein falsches Label."),
+    ("Deployment und Baselines (Folien 52–56)",
+     "Eine Million Reviews pro Monat: API oder Open Weights, Framework oder SDK, LLM oder einfacheres Modell? Nennen Sie Entscheidungskriterien.",
+     "Mit Keyword-Regeln oder TF-IDF plus klassischem Klassifikator beginnen; auf unabhängigen Labels Qualität, Throughput, Latenz, Gesamtkosten und Erklärbarkeit vergleichen. API: Betrieb einfach, aber Datenübertragung und Anbieterabhängigkeit. Lokal: Datenkontrolle, aber Hardware/Strom/Betrieb und Lizenz prüfen. Open Weights bedeutet nicht automatisch Open Source. SDK für einfache Pipelines; Framework bei komplexem Agent-State/Tracing und vertretbarem Wartungsaufwand."),
+    ("Anonymisierung und drei Regelwerke (Folie 57)",
+     "Was muss vor dem Senden echter Reviews an eine externe API passieren? Unterscheiden Sie Schweizer DSG, EU AI Act und Dataset/API-Vertragsbedingungen.",
+     "Personenbezüge lokal erkennen und entfernen; Ergebnis auf Namen, Kontakte und identifizierende Geschichten prüfen. Automatik kann Informationen übersehen; dann synthetische Daten oder lokale Verarbeitung einsetzen. Originale und private Caches nicht publizieren. DSG betrifft Personendatenbearbeitung; der EU AI Act regelt KI-Systeme nach Einsatz und Risiken; Nutzungsbedingungen sind zusätzliche vertragliche Pflichten. Anwendbarkeit vor Deployment prüfen. Anonymisierung ersetzt weder Nutzungsrechte noch Prüfung von Anbieterbedingungen."),
+]
+
+
+def build_concept_checks():
+    cells = [md('# Ergänzende Lernkontrolle: Large Language Models\n\nNicht bewertet; ergänzt die unveränderte 40-Punkte-Übungsprüfung. Alle Aufgaben sind ohne API lösbar. Die Antworten sind Vorschläge zur Selbstkontrolle, keine aktuellen Rechts- oder Preisangaben.')]
+    for title, question, answer in CONCEPT_CHECKS:
+        cells += [md('## ' + title + '\n\n' + question),
+                  md('<details><summary>Antwortvorschlag</summary>\n\n' + answer + '\n\n</details>')]
+    return {'cells': cells, 'metadata': {'kernelspec': {'display_name': 'Python 3', 'language': 'python', 'name': 'python3'}, 'language_info': {'name': 'python'}}, 'nbformat': 4, 'nbformat_minor': 5}
+
+
 if __name__ == '__main__':
     save(build(solution=False), TASKS_NB)
     save(execute(build(solution=True)), SOLUTION_NB)
+    save(build_concept_checks(), AP / 'Lecture_Concept_Checks.ipynb')

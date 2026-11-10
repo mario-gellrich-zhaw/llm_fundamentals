@@ -1,6 +1,6 @@
 """Rebuild the Yelp subset in data/ from the full Yelp Open Dataset.
 
-Only needed if you want to recreate the files; they are already in data/.
+Lecturer only: students obtain the existing subset from Moodle.
 
 Input: the two Parquet files of the Yelp Open Dataset (copy on Hugging Face:
 yashraizad/yelp-open-dataset-business, yashraizad/yelp-open-dataset-reviews),
@@ -34,6 +34,8 @@ def main() -> None:
     p.add_argument("--reviews", type=Path, required=True)
     p.add_argument("--out", type=Path, default=ROOT / "data")
     args = p.parse_args()
+
+    args.out.mkdir(parents=True, exist_ok=True)
 
     # Business records: exact name match for McDonald's, prefix match for IKEA
     bus = pd.read_parquet(args.business)

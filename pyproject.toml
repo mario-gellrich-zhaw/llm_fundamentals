@@ -7,6 +7,7 @@ name = "llm-course"
 version = "0.1.0"
 description = "Helpers for Week 10 'Working with LLMs' (Module Data Science, ZHAW SML)"
 requires-python = ">=3.11"
+dependencies = ["openai>=3.49,<4", "python-dotenv>=1.0", "tqdm>=4.66", "presidio-analyzer>=2.2,<3", "spacy>=3.8,<4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

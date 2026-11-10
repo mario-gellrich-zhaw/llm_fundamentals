@@ -44,7 +44,7 @@
         }
     },
 
-    // Ollama listens here (exercise 4).
+    // Ollama listens here (exercise 5).
     "forwardPorts": [11434],
     "portsAttributes": {
         "11434": { "label": "Ollama", "onAutoForward": "silent" }

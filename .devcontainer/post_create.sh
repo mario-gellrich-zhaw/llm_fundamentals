@@ -4,10 +4,13 @@ set -euo pipefail
 
 echo ">>> Installing Python packages"
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints-tested.txt
 pip install -e .
 
-echo ">>> Installing Ollama (exercise 4, optional; failures do not stop the setup)"
+echo ">>> Installing the local English privacy model"
+python -m spacy download en_core_web_sm
+
+echo ">>> Installing Ollama (exercise 5, optional; failures do not stop the setup)"
 if ! command -v ollama >/dev/null 2>&1; then
     curl -fsSL https://ollama.com/install.sh | sh || echo "Ollama install failed; local_model.ipynb can install it later."
 fi

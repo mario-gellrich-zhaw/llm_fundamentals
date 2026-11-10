@@ -17,7 +17,7 @@ Git ignores the files, so they are never pushed to GitHub.
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
-| `processed/silver_labels.csv` | 200 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
+| `processed/silver_labels.csv` | up to 200 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 
 All of these are ignored by git; only this README and the empty folders `raw/` and
@@ -91,3 +91,24 @@ The Yelp Open Dataset is licensed for non-commercial, academic use, and the data
 be displayed or distributed publicly (Yelp Dataset Terms of Use, section 4A). Use the data
 only in this course, don't share it, and delete it after the semester. Review texts can
 contain names of people: don't search for or contact the authors.
+
+## Before external API calls
+
+Keep this original data local. Each API notebook prepares review text with local
+Presidio/spaCy redaction; inspect the result for identifiers and identifying stories.
+Automated English detection can miss information. The API helpers redact again before
+transmission and caching; RAG uses local passage aliases rather than Yelp review IDs.
+Use synthetic data or local inference if sufficient de-identification is not feasible.
+See the main README's anonymization section for setup, limitations and cache handling.
+
+Optional `processed/human_labels.csv`: one row per `review_id`, with independent
+`annotator_a`, `annotator_b` and resolved `gold` labels. Each label must be one of
+`positive`, `negative`, `mixed`. Compute agreement before resolving disagreements.
+
+Optional `processed/rag_relevance.csv`: `question,review_id,relevant` (0 or 1), one
+row per question and every indexed review. Complete independent labels are required
+for Recall@5; unjudged documents must not silently become negative labels.
+
+Silver labels are model-generated references, so reported accuracy against them is
+model agreement. Reference failures are excluded and counted; prediction failures count
+as errors. These labels cannot establish independent human-level accuracy.
