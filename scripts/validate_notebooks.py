@@ -32,6 +32,7 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import shutil
 import socket
 import sys
@@ -44,11 +45,7 @@ from unittest.mock import patch
 import matplotlib
 import numpy as np
 import pandas as pd
-from openai.types.decision import Decision
 from openai.types.responses import Response
-
-import llm_course
-from llm_course import client
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -143,60 +140,24 @@ def response(**kwargs):
     )
 
 
-def decision(**_kwargs):
-    """Construct a synthetic decision response for offline checks."""
-    return Decision.model_validate(
-        {
-            "model": "gpt-6-luna",
-            "answers": [
-                {
-                    "type": "choice",
-                    "name": "sentiment",
-                    "choice": "negative",
-                    "confidence": 0.9,
-                    "probabilities": [
-                        {"value": "negative", "probability": 0.9},
-                        {"value": "positive", "probability": 0.05},
-                        {"value": "mixed", "probability": 0.05},
-                    ],
-                }
-            ],
-            "usage": {
-                "input_tokens": 100,
-                "output_tokens": 10,
-                "total_tokens": 110,
-                "input_tokens_details": {
-                    "cached_tokens": 0,
-                    "cache_write_tokens": 0,
-                },
-                "output_tokens_details": {"reasoning_tokens": 5},
-            },
-        }
-    )
-
-
 def main():
     """Run the command-line workflow."""
     fake_module = ModuleType("sentence_transformers")
     fake_module.SentenceTransformer = Embeddings
-    fake_api = SimpleNamespace(
+    # One fake client answers both the API calls and the local Ollama calls.
+    fake_client = SimpleNamespace(
         responses=SimpleNamespace(create=response),
-        decisions=SimpleNamespace(create=decision),
-    )
-    fake_local = SimpleNamespace(
         chat=SimpleNamespace(
             completions=SimpleNamespace(
                 create=lambda **kw: SimpleNamespace(
                     choices=[
                         SimpleNamespace(
-                            message=SimpleNamespace(
-                                content="Overall: negative."
-                            )
+                            message=SimpleNamespace(content="Negative.")
                         )
                     ]
                 )
             )
-        )
+        ),
     )
     archive = ROOT / "data/llm_fundamentals_data.zip"
     if not archive.exists():
@@ -216,14 +177,10 @@ def main():
         data.mkdir()
         (data / "processed").mkdir()
         shutil.copyfile(archive, data / archive.name)
-        stack.enter_context(patch.object(llm_course, "DATA", data))
-        stack.enter_context(
-            patch.object(client, "CACHE_DIR", Path(tmp) / "cache")
-        )
-        stack.enter_context(
-            patch.object(client, "get_client", return_value=fake_api)
-        )
-        stack.enter_context(patch("openai.OpenAI", return_value=fake_local))
+        stack.enter_context(patch("openai.OpenAI", return_value=fake_client))
+        # The notebooks read ../data, relative to their own folder.
+        previous_directory = os.getcwd()
+        stack.callback(os.chdir, previous_directory)
         stack.enter_context(
             patch.dict(sys.modules, {"sentence_transformers": fake_module})
         )
@@ -244,6 +201,9 @@ def main():
             notebook = json.loads(path.read_text())
             namespace = {"__name__": "__main__"}
             count = 0
+            working_directory = Path(tmp) / folder.name
+            working_directory.mkdir()
+            os.chdir(working_directory)
             for index, cell in enumerate(notebook["cells"]):
                 if cell["cell_type"] != "code":
                     continue
@@ -297,27 +257,24 @@ def main():
                     ex["text"] for ex in namespace["fewshot"]
                 }
                 assert (data / "processed/silver_labels.csv").exists()
-                assert namespace["test"].groupby("chain").size().to_dict() == {
-                    "IKEA": 20,
-                    "McDonald's": 20,
+                test = namespace["test"]
+                assert test.groupby("chain").size().to_dict() == {
+                    "IKEA": 10,
+                    "McDonald's": 10,
                 }
-                assert namespace["test"].groupby("stars").size().to_dict() == {
-                    1: 8,
-                    2: 8,
-                    3: 8,
-                    4: 8,
-                    5: 8,
-                }
-                assert namespace["test"].groupby(
-                    ["chain", "stars"]
-                ).size().eq(4).all()
+                assert test.groupby("stars").size().eq(4).all()
+                assert test.groupby(["chain", "stars"]).size().eq(2).all()
+                # All 40 prepared labels are saved for notebook 05.
                 expected = pd.read_csv(data / "silver_reference.csv")
-                actual = namespace["test"][["id", "silver"]]
+                saved = pd.read_csv(data / "processed/silver_labels.csv")
                 pd.testing.assert_frame_equal(
-                    actual.sort_values("id").reset_index(drop=True),
+                    saved[["id", "silver"]]
+                    .sort_values("id")
+                    .reset_index(drop=True),
                     expected.sort_values("id").reset_index(drop=True),
                 )
-                assert namespace["runs"].shape == (3, 5)
+                assert set(test["id"]) <= set(expected["id"])
+                assert namespace["runs"].shape == (3, 3)
             if folder.name.startswith("04_"):
                 assert set(namespace["df"]["chain"]) == {"McDonald's"}
             if folder.name.startswith("05_"):

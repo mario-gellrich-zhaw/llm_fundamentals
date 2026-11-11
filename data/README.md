@@ -68,7 +68,7 @@ The texts are anonymized; Yelp IDs are replaced by short IDs.
 | `store`, `city` | Location of the review |
 | `stars` | Rating of the review, 1–5 |
 | `date` | Date and time of the review (UTC) |
-| `text` | Review text after local anonymization: names of people, e-mail addresses and phone numbers are replaced by `<REDACTED>` |
+| `text` | Review text after local anonymization: names of people, e-mail addresses and phone numbers are replaced by placeholders such as `<PERSON>` |
 
 ### `silver_reference.csv`
 
@@ -134,7 +134,7 @@ anonymizes it locally with Presidio and spaCy, shows texts before and after, and
 the tokens of all reviews locally and sends none of them.
 
 Automatic anonymization can miss personal details, so the files in `processed/` stay
-private too. The API helpers anonymize every text once more before sending it. See the
+private too. Notebooks 03–05 send only these anonymized texts to the API. See the
 section on anonymization in the main README.
 
 Silver labels are model-generated references, so reported accuracy against them is

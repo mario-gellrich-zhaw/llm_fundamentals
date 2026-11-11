@@ -29,6 +29,8 @@
                 "workbench.colorTheme": "Default Dark+",
                 "workbench.iconTheme": "vs-seti",
                 "editor.rulers": [80],
+                // Wrap long printed lines (model answers, review texts)
+                "notebook.output.wordWrap": true,
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
                 "files.exclude": {
                     "**/__pycache__": true,

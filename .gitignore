@@ -1,7 +1,7 @@
 # Keys
 .env
 
-# Answer cache of the notebooks (may contain model outputs on review texts)
+# Old answer cache of earlier course versions (may contain review texts)
 .cache/
 
 # Yelp data: never in this public repo (Yelp Dataset Terms, 4A).

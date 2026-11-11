@@ -5,7 +5,6 @@ set -euo pipefail
 echo ">>> Installing Python packages"
 python -m pip install --upgrade pip
 pip install -r requirements.txt -c constraints-tested.txt
-pip install -e .
 
 echo ">>> Installing the local English privacy model"
 python -m spacy download en_core_web_sm

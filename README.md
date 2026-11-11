@@ -56,10 +56,8 @@ An API request fails because the key is missing or invalid?
 - **Keep the key private.** Don't print it, copy it or show it in screenshots.
 - **All of us share one key.** If you see `429 rate limit`, just wait: the notebooks retry
   automatically.
-- **Identical cached requests reuse their answers.** `ask()`, `ask_many()` and
-  `ask_decision()` cache completed, non-refused responses in `.cache/llm-v2/`.
-  Changed prompts, new `run` values and `use_cache=False` incur new API calls.
-  The API timing cell in `05_Local_Model` is deliberately uncached and costs money on every rerun.
+- **Every run of a cell sends its requests again.** There is no answer cache: rerunning
+  a notebook incurs new API calls, and answers can differ between runs.
   Retries are finite; persistent rate limits or exhausted quota still need attention.
 
 Working outside Codespaces? Copy `.env.example` to `.env` and enter your own key.
@@ -84,7 +82,7 @@ current quota and your usage on <https://github.com/settings/billing>.
   not use up your quota.
 
 Your fork is public, like this repository. Push only your code and notebooks: the data,
-`.env` and the answer cache are ignored by Git and never leave the codespace.
+`.env` is ignored by Git and never leaves the codespace.
 
 ### Data
 
@@ -121,7 +119,6 @@ From the repository root, with Python 3.11 or later:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt -c constraints-tested.txt
-python -m pip install -e .
 python -m spacy download en_core_web_sm
 cp -n .env.example .env
 ```
@@ -129,8 +126,8 @@ cp -n .env.example .env
 Enter your key in `.env`, then select this environment as the notebook's Python kernel.
 Codespaces runs the package and privacy-model installation automatically; rebuild an
 existing Codespace or run the installation commands after updating the course.
-Exercise notebooks use the installed helper's repository-relative `DATA` path and work
-from the root or their own folder. The exam setup resolves either working directory too.
+Exercise notebooks read the data from `../data`, so run them from their own folder (the
+default in VS Code). The exam setup works from its own folder or from the repository root.
 The optional Ollama cells require a Linux/macOS shell; the supplied Codespace is Linux.
 
 ### Anonymization before the API
@@ -139,15 +136,17 @@ Reviews can contain names and other personal details. **No personal data may be 
 an external API.** The course handles this in two steps:
 
 1. **Notebook 01 prepares a sample.** Its last part draws a random sample of 500 reviews (250 per chain),
-   removes personal details with `anonymize()` and saves the result as
+   removes personal details and saves the result as
    `data/processed/reviews_sample.csv`. You compare texts before and after and can correct
-   them by hand. `anonymize()` runs in your codespace (libraries Presidio and spaCy) and
-   replaces details that identify a person with `<REDACTED>`: names of people, e-mail
-   addresses, phone numbers and account or ID numbers. Company names, places and dates
-   stay, because the model needs them to understand a review. No API key is needed.
-2. **The helpers check again.** `ask()`, `ask_many()` and `ask_decision()` anonymize every
-   text once more right before it is sent. If the privacy model is missing, they stop
-   instead of sending the original text.
+   them by hand. The notebook defines a short function `anonymize()` with the libraries
+   Presidio and spaCy. It runs in your codespace and replaces details that identify a
+   person with a placeholder such as `<PERSON>`: names of people, e-mail addresses, phone
+   numbers and account or ID numbers. Company names, places and dates stay, because the
+   model needs them to understand a review. No API key is needed.
+2. **Notebooks 03–05 send only this sample.** They call the OpenAI library directly
+   (`client.responses.create(...)`) and do not anonymize again, so never send texts from
+   the original CSV files. Requests with review texts use `store=False`, which asks the
+   provider not to keep them.
 
 Notebooks 03–05 only read the prepared sample. They stop with a clear message if you have
 not run notebook 01 (or, for notebook 05, notebook 03) yet. Notebook 02 counts the tokens
@@ -155,9 +154,8 @@ of all reviews on your computer and sends none of them.
 
 Automatic anonymization makes mistakes: it can miss a name and it can remove harmless
 words. It reduces the risk; it does not guarantee that nobody can be identified. Always
-call the API through the course helpers, not through your own client. The sample, the
-answer cache and notebook outputs can contain review text: keep them private, and clear
-the outputs before you share a notebook.
+send only texts from the prepared sample. The sample and notebook outputs can contain
+review text: keep them private, and clear the outputs before you share a notebook.
 
 ## Exercises
 
@@ -165,19 +163,19 @@ the outputs before you share a notebook.
 |---|---|---|---|---|
 | `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, compare both review distributions, inspect examples and prepare an anonymized sample of 250 reviews per chain | 10–15 min, plus self-check | under 1 min |
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compare the cost of reading both complete review datasets, see what reasoning costs | 10 min, together | under 1 min |
-| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 40 reviews (20 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
+| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 20 reviews (10 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
 | `04_Mini_RAG` | `mini_rag.ipynb` | Search 250 McDonald's reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
 | `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
 | `06_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
 
-"First run" is the time to run all cells once in a 2-core codespace. Later runs are faster,
-because answers of the model are saved in `.cache/`.
+"First run" is the time to run all cells once in a 2-core codespace. Notebooks that call
+the API take about as long on every run, because answers are not saved.
 
 **How the notebooks keep it simple and fast**
 
 - Every step starts with **one example** (one review, one request) before it is applied to many.
-- The API notebooks use **small samples**: 500 anonymized reviews in total (250 per chain), 40 for
+- The API notebooks use **small samples**: 500 anonymized reviews in total (250 per chain), 20 for
   classification, 10 for the model comparison.
 - Classification requests use **low reasoning effort**. Silver labels are prepared once
   by the lecturer and included in the Moodle data zip.
@@ -206,7 +204,7 @@ llm_fundamentals/
 ├── 05_Local_Model/
 │   └── local_model.ipynb
 ├── 06_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
-├── tests/                    Offline checks: privacy, caching, parsing, notebook cells
+├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Yelp subset (from Moodle, not in git)
 │   ├── README.md
 │   ├── businesses_mcdonalds_ikea.csv   (from Moodle)
@@ -215,18 +213,12 @@ llm_fundamentals/
 │   ├── fewshot_examples.json           (from Moodle)
 │   ├── raw/                  Full Yelp files (not in git)
 │   └── processed/            Files the notebooks write (not in git)
-├── scripts/                  Data preparation and checks (for the lecturer), Ollama start
+├── scripts/                  Data preparation and checks (for the lecturer)
 │   ├── prepare_data.py
 │   ├── reproduce_slide_numbers.py
 │   ├── make_ap01_data.py
 │   ├── build_ap01_notebooks.py
-│   ├── start_ollama.sh
 │   └── validate_notebooks.py
-├── src/llm_course/           Local privacy, API calls and evaluation
-│   ├── __init__.py
-│   ├── client.py
-│   ├── privacy.py
-│   └── evaluation.py
 ├── .env.example
 ├── .gitattributes
 ├── .gitignore
@@ -243,7 +235,7 @@ llm_fundamentals/
 | File | Purpose |
 |---|---|
 | `devcontainer.json` | Defines the codespace: Python 3.11 image, VS Code extensions (Python, Jupyter, Copilot, Codex and others), the `OPENAI_API_KEY` secret, port 11434 for Ollama, and the two setup scripts below. |
-| `post_create.sh` | Runs once when the codespace is created: installs the Python packages from `requirements.txt`, installs the helper package `llm_course`, downloads the English privacy model, and installs Ollama for `05_Local_Model`. |
+| `post_create.sh` | Runs once when the codespace is created: installs the Python packages from `requirements.txt`, downloads the English privacy model, and installs Ollama for `05_Local_Model`. |
 | `post_start.sh` | Runs every time the codespace starts: starts the Ollama server in the background and checks that the API key is available, without printing it. |
 
 ### Exercise notebooks
@@ -252,7 +244,7 @@ llm_fundamentals/
 |---|---|
 | `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: ratings of both chains, weighted vs. unweighted averages, review star distribution and sampling bias, three example texts, and a simple topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA and McDonald's reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
-| `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 40 reviews (20 per chain; four per star rating and chain): free text vs. JSON schema; two predefined prompts with prepared silver labels from the Moodle data zip and separate few-shot examples; accuracy, five runs on three reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
+| `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 20 reviews (10 per chain; two per star rating and chain): free text vs. JSON schema; two predefined prompts with prepared silver labels from the Moodle data zip and separate few-shot examples; accuracy, three runs on three reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
 | `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over 250 McDonald's sample reviews (switchable to IKEA), combined step by step with rank fusion. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
 
@@ -279,32 +271,21 @@ Moodle (see [Data](#data)).
 | `reproduce_slide_numbers.py` | Recomputes the dated, input-only slide estimates from the original local data. |
 | `make_ap01_data.py` | Regenerates the synthetic exam CSVs with a fixed random seed; no model calls. |
 | `build_ap01_notebooks.py` | Builds both exam versions and the concept checks; executes only the offline synthetic solution. |
-| `start_ollama.sh` | Used by `05_Local_Model`: installs Ollama if it is missing, starts the server and downloads the model. |
 | `validate_notebooks.py` | Executes practical Python cells with real redaction, fake model services and blocked network access. |
 
-### `src/llm_course/`: shared helpers
+### No hidden helpers
 
-The notebooks show every analysis step directly with standard libraries (pandas,
-scikit-learn, tiktoken, rank-bm25, sentence-transformers). Only two things are hidden in
-helpers, because they must work the same way in every notebook: removing personal details
-and calling the API with a cache.
+The notebooks show every step directly with existing libraries: pandas, scikit-learn,
+tiktoken, rank-bm25, sentence-transformers, Presidio and the OpenAI library. There is no
+course package to install.
 
-| Function | What it does |
+| Task | Where and how |
 |---|---|
-| `ask(...)` | Sends one request, like `client.responses.create(...)` on the slides. Anonymizes the text first and saves the answer in `.cache/`: the same request is not sent twice. `run=1, 2, ...` asks for a new answer, `use_cache=False` always sends the request. |
-| `ask_many(inputs, ...)` | `ask()` for a list of inputs, 8 at a time, with a progress bar. |
-| `ask_decision(...)` | Fixed choices (Decisions API) with the same anonymization and cache. |
-| `anonymize(text)` | Replaces names of people, e-mail addresses, phone numbers and account or ID numbers with `<REDACTED>`. Runs locally. |
-| `response_label(response)` | Reads the label from a JSON answer; returns `'unparsed'`, `'refused'` or `'incomplete'` if there is no valid label. |
-| `parse_label(text)` | Accepts a free-text answer only if it is exactly one label; otherwise `'unparsed'`. |
-| `DATA`, `ROOT` | Paths of the folder `data` and of the repository. |
-
-| File | Purpose |
-|---|---|
-| `__init__.py` | Makes the functions above available with `from llm_course import ...`. |
-| `client.py` | `ask()`, `ask_many()` and `ask_decision()`: anonymization before sending, answer cache on disk (safe when several notebooks run at once), automatic retries on rate limits, key from `.env` outside Codespaces. |
-| `privacy.py` | `anonymize()` with Presidio and the English spaCy model, and the check that prepares every request. Stops the request if the privacy model is missing. English only. |
-| `evaluation.py` | `parse_label()` and `response_label()`. |
+| Call the model | `client = OpenAI(max_retries=8)` and `client.responses.create(...)` in notebooks 02–05. The client retries automatically on rate limits. |
+| API key | Codespaces secret `OPENAI_API_KEY`; outside Codespaces `load_dotenv("../.env")` reads it from `.env`. |
+| Remove personal details | Function `anonymize()` defined in notebook 01 with Presidio's `AnalyzerEngine` and `AnonymizerEngine`. English only. |
+| Read a label | `json.loads(r.output_text)["sentiment"]` for JSON answers (notebook 03); cleaned free text for the comparison in notebook 05. |
+| Paths | `DATA = Path("../data")`, relative to the folder of the notebook. |
 
 ### Practice exam and validation
 
@@ -321,7 +302,7 @@ Rebuild the synthetic data and notebooks from the repository root (notebook
 generation uses Black from the optional development tools):
 
 ```bash
-python -m pip install -e '.[dev]'
+python -m pip install "black>=25,<27" "pylint>=3.3,<5"
 python scripts/make_ap01_data.py
 python scripts/build_ap01_notebooks.py
 ```
@@ -342,8 +323,8 @@ Formatting uses an 80-character line limit. Install the optional development too
 and run the checks from the repository root:
 
 ```bash
-python -m pip install -e '.[dev]'
-python -m black --check src scripts tests
+python -m pip install "black>=25,<27" "pylint>=3.3,<5"
+python -m black --check scripts tests
 python scripts/lint_code.py
 ```
 
@@ -365,7 +346,7 @@ check using fake API, embedding and Ollama services with the network blocked:
 python scripts/validate_notebooks.py
 ```
 
-This runs real local redaction and uses temporary data/caches. It does not test actual
+This runs real local redaction and uses temporary data. It does not test actual
 hosted-model quality, E5 downloads or Ollama performance. `constraints-tested.txt`
 records the directly installed dependency versions used for the offline checks on
 Linux/Python 3.11; it is not a complete transitive lock.
@@ -376,8 +357,8 @@ Linux/Python 3.11; it is not a complete transitive lock.
 |---|---|
 | `.env.example` | Template for a local `.env` file with `OPENAI_API_KEY`. Only needed outside Codespaces. |
 | `.gitattributes` | Keeps Linux line endings for scripts and notebooks, so they also run when edited on Windows. |
-| `.gitignore` | Keeps the key (`.env`), the answer cache (`.cache/`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
-| `pyproject.toml` | Describes the helper package `llm_course` so that it can be installed with `pip install -e .`. |
+| `.gitignore` | Keeps the key (`.env`), the local copy of the embedding model (`models/`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
+| `pyproject.toml` | Settings of the code checks (Black and pylint). |
 | `constraints-tested.txt` | Direct dependency versions used by the offline validation on Linux/Python 3.11. |
 | `requirements.txt` | Python packages: `openai`, `tiktoken`, `pandas`, `scikit-learn`, `rank-bm25`, `sentence-transformers` (with CPU-only PyTorch), Jupyter and others. |
 | `README.md` | This file. |
@@ -386,7 +367,6 @@ Files created while you work, all ignored by git:
 
 | Path | Content |
 |---|---|
-| `.cache/llm-v2/` | Completed answers to sanitized requests and empty coordination lock files. Removing cached answers causes new paid requests. |
 | `data/processed/reviews_sample.csv` | Anonymized sample of 500 reviews from notebook 01, used in notebooks 03 and 04. |
 | `data/silver_reference.csv` | Prepared sample IDs and silver labels for 40 reviews, included in the Moodle data zip. |
 | `data/processed/silver_labels.csv` | 40 reviews with prepared silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |

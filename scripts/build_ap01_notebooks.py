@@ -798,8 +798,10 @@ C2 = {
     ),
     "skeleton": (
         "# Vorgegeben: jeden Review in Wörter zerlegen (Kleinbuchstaben).\n"
-        "documents_C2 = [re.findall(r'\\w+', text.lower()) for text in "
-        "df['text']]\n"
+        "documents_C2 = []\n"
+        "for text in df['text']:\n"
+        "    words_C2 = re.findall(r'\\w+', text.lower())\n"
+        "    documents_C2.append(words_C2)\n"
         "\n"
         "# Vorgegeben: den BM25-Index aufbauen.\n"
         "bm25_C2 = BM25Okapi(documents_C2)\n"
