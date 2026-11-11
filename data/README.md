@@ -19,7 +19,7 @@ Git ignores the files, so they are never pushed to GitHub.
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
 | `silver_reference.csv` | 40 | Prepared sample IDs and silver labels for notebook 03, included in the Moodle zip |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
-| `processed/reviews_sample.csv` | 500 | Anonymized sample of 250 reviews per chain, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Mini_RAG` (not in the zip) |
+| `processed/reviews_sample.csv` | 500 | Anonymized sample of 250 reviews per chain, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Extract_Information` (not in the zip) |
 | `processed/silver_labels.csv` | 40 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 

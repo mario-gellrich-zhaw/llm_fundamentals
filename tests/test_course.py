@@ -7,14 +7,12 @@ import contextlib
 import io
 import json
 import os
-import re
 import tempfile
 import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,7 +86,11 @@ class NotebookTests(unittest.TestCase):
                 "sample_path = ",
                 "notebook 01",
             ),
-            ("04_Mini_RAG/mini_rag.ipynb", "sample_path = ", "notebook 01"),
+            (
+                "04_Extract_Information/extract_information.ipynb",
+                "sample_path = ",
+                "notebook 01",
+            ),
             (
                 "05_Local_Model/local_model.ipynb",
                 "silver_path = ",
@@ -110,31 +112,56 @@ class NotebookTests(unittest.TestCase):
                         {"DATA": Path(tmp), "pd": pd},
                     )
 
-    def test_notebook_04_retrieve_combines_keyword_and_meaning_ranks(self):
-        """Check notebook 04 retrieve combines keyword and meaning ranks."""
-
+    def test_notebook_04_builds_both_tables_and_checks_quotes(self):
+        """Check notebook 04 keeps known columns and tests every quote."""
         source = code_cell(
-            "04_Mini_RAG/mini_rag.ipynb", "# Hybrid search for one question"
+            "04_Extract_Information/extract_information.ipynb",
+            "# Extract the fields of every review",
         )
+
+        def fake_extract(text, _schema):
+            return {
+                "chain": "IKEA",
+                "places": ["Tampa"],
+                "visit_type": "store",
+                "items": [],
+                "wait_minutes": None,
+                "aspects": [
+                    {
+                        "aspect": "staff",
+                        "polarity": "negative",
+                        "evidence": "rude staff",
+                    },
+                    {
+                        "aspect": "price",
+                        "polarity": "positive",
+                        "evidence": "words that are not in " + text,
+                    },
+                ],
+            }
 
         ns = {
             "pd": pd,
-            "re": re,
-            "df": pd.DataFrame(
+            "extract": fake_extract,
+            "full_schema": {},
+            "reviews": pd.DataFrame(
                 {
-                    "id": ["R001", "R002", "R003"],
-                    "stars": [1, 2, 3],
-                    "text": ["a", "b", "c"],
+                    "id": ["R001", "R002"],
+                    "chain": ["IKEA", "McDonald's"],
+                    "store": ["IKEA", "McDonald's"],
+                    "city": ["Tampa", "Reno"],
+                    "stars": [1, 5],
+                    "text": ["Very rude staff today.", "Fast and friendly."],
                 }
             ),
-            "bm25": SimpleNamespace(
-                get_scores=lambda query: [3.0, 2.0, 1.0]
-            ),  # ranks 1, 2, 3
-            "embeddings": np.array([[0.1], [0.9], [0.5]]),  # ranks 3, 1, 2
-            "model": SimpleNamespace(encode=lambda text, **kw: np.array([1.0])),
+            "print": lambda *a, **k: None,
         }
         exec(source, ns)
-        self.assertEqual(ns["hits"]["id"].head(2).tolist(), ["R002", "R001"])
+        self.assertEqual(ns["visits"]["city"].tolist(), ["Tampa", "Reno"])
+        self.assertEqual(len(ns["aspects"]), 4)
+        self.assertEqual(
+            ns["aspects"]["quote_found"].tolist(), [True, False, False, False]
+        )
 
     def test_notebook_05_cost_uses_input_and_output_tokens(self):
         """Check notebook 05 adds up both token counts for every request."""

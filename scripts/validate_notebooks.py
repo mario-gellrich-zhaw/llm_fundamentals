@@ -1,7 +1,7 @@
 (
     (
         "Exercise the five practical notebooks "
-        "locally with fake API/embedding/Ollama "
+        "locally with fake API/Ollama "
         "clients.\n"
         "\n"
         "No paid requests, tokenizer/model "
@@ -13,7 +13,7 @@
         "estimates.\n"
         "This verifies notebook wiring, not "
         "hosted-model quality or actual "
-        "E5/Ollama "
+        "Ollama "
         "speed.\n"
         "Run after installing requirements and "
         "en_core_web_sm: python "
@@ -29,21 +29,18 @@
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import io
 import json
 import os
 import shutil
 import socket
-import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import matplotlib
-import numpy as np
 import pandas as pd
 from openai.types.responses import Response
 
@@ -54,7 +51,7 @@ class Tokenizer:
     """Character tokens: deterministic, no model files or network."""
 
     def encode(self, text, add_special_tokens=False):
-        """Return deterministic character tokens or fake embedding vectors."""
+        """Return deterministic character tokens."""
         return list(text) + ([0, 1] if add_special_tokens else [])
 
     def decode(self, tokens):
@@ -69,38 +66,29 @@ class Tokenizer:
         return {"offset_mapping": [(i, i + 1) for i in range(len(text))]}
 
 
-class Embeddings:
-    """Provide deterministic vectors without downloading a model."""
-
-    def __init__(self, *_args, **_kwargs):
-        self.tokenizer = Tokenizer()
-        self.max_seq_length = 512
-
-    def encode(self, texts, **_kwargs):
-        """Return deterministic character tokens or fake embedding vectors."""
-        single = isinstance(
-            texts, str
-        )  # One text gives one vector, a list gives a matrix.
-        vectors = np.array(
-            [
-                list(hashlib.sha256(t.encode()).digest())
-                for t in ([texts] if single else texts)
-            ],
-            dtype=float,
-        )
-        vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
-        return vectors[0] if single else vectors
+def fake_value(schema):
+    """Build a small value that fits a JSON schema (for fake extractions)."""
+    kind = schema.get("type")
+    if isinstance(kind, list):
+        return None if "null" in kind else fake_value({"type": kind[0]})
+    if kind == "object":
+        return {
+            key: fake_value(value)
+            for key, value in schema["properties"].items()
+        }
+    if kind == "array":
+        return [fake_value(schema["items"])]
+    if kind == "string":
+        return schema["enum"][-1] if "enum" in schema else "fries"
+    return 1
 
 
 def response(**kwargs):
     """Construct a synthetic API response for offline checks."""
-    schema_name = kwargs.get("text", {}).get("format", {}).get("name")
-    if schema_name == "aspects":
-        text = (
-            '{"sentiment":"negative","aspects":[{"asp'
-            'ect":"service","polarity":"negative","ev'
-            'idence":""}]}'
-        )
+    answer_format = kwargs.get("text", {}).get("format", {})
+    schema_name = answer_format.get("name")
+    if schema_name == "extraction":
+        text = json.dumps(fake_value(answer_format["schema"]))
     else:
         text = (
             '{"sentiment":"negative"}' if schema_name else "Overall: negative."
@@ -142,8 +130,6 @@ def response(**kwargs):
 
 def main():
     """Run the command-line workflow."""
-    fake_module = ModuleType("sentence_transformers")
-    fake_module.SentenceTransformer = Embeddings
     # One fake client answers both the API calls and the local Ollama calls.
     fake_client = SimpleNamespace(
         responses=SimpleNamespace(create=response),
@@ -181,9 +167,6 @@ def main():
         # The notebooks read ../data, relative to their own folder.
         previous_directory = os.getcwd()
         stack.callback(os.chdir, previous_directory)
-        stack.enter_context(
-            patch.dict(sys.modules, {"sentence_transformers": fake_module})
-        )
         stack.enter_context(
             patch("tiktoken.get_encoding", return_value=Tokenizer())
         )
@@ -276,7 +259,12 @@ def main():
                 assert set(test["id"]) <= set(expected["id"])
                 assert namespace["runs"].shape == (3, 3)
             if folder.name.startswith("04_"):
-                assert set(namespace["df"]["chain"]) == {"McDonald's"}
+                chains = namespace["reviews"].groupby("chain").size()
+                assert chains.to_dict() == {"IKEA": 10, "McDonald's": 10}
+                assert len(namespace["visits"]) == 20
+                assert len(namespace["aspects"]) == 20
+                assert "wait_minutes" in namespace["visits"].columns
+                assert namespace["aspects"]["quote_found"].dtype == bool
             if folder.name.startswith("05_"):
                 assert namespace["test"].groupby("chain").size().to_dict() == {
                     "IKEA": 5,

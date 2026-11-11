@@ -2,7 +2,7 @@
 
 Exercises for **Week 10 of the module «Data Science»** (MSc, ZHAW School of Management and Law).
 You will work with a large language model through its API: count tokens and estimate
-costs, write and evaluate prompts, build a small retrieval-augmented pipeline (RAG) and
+costs, write and evaluate prompts, extract structured information from review texts and
 compare an API model with a local open-weight model.
 
 The data-preparation notebook and four LLM exercises use real IKEA and McDonald's reviews from the
@@ -21,7 +21,7 @@ and simulated model results, so it needs neither an API key nor the Yelp downloa
    `https://codespaces.new/<your-username>/llm_fundamentals` (replace `<your-username>`),
    or on your fork click **Code** → **Codespaces** → **Create codespace on master**.
 4. Wait until VS Code opens in the browser. The first start takes several minutes while
-   PyTorch, the local privacy model and Ollama are installed; later starts are fast.
+   the Python packages, the local privacy model and Ollama are installed; later starts are fast.
 5. Add the data from Moodle, see [Data](#data) below.
 6. Run [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb)
    to the end. Its last part creates the anonymized sample of 500 reviews (250 per chain) that notebooks
@@ -75,7 +75,7 @@ current quota and your usage on <https://github.com/settings/billing>.
   2 cores after the optional speed test in `05_Local_Model`.
 - **The spending limit is USD 0 by default.** When the quota is used up, codespaces stop;
   nothing is charged unless you raise the limit.
-- **Stopped codespaces still use storage.** PyTorch, the embedding model and the Ollama
+- **Stopped codespaces still use storage.** The Python packages and the Ollama
   model make this codespace a few GB large. Delete it on <https://github.com/codespaces>
   when you no longer need it; push your work to your fork first.
 - **Idle codespaces stop after 30 minutes** by default, so a forgotten browser tab does
@@ -164,7 +164,7 @@ review text: keep them private, and clear the outputs before you share a noteboo
 | `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, compare both review distributions, inspect examples and prepare an anonymized sample of 250 reviews per chain | 10–15 min, plus self-check | under 1 min |
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compare the cost of reading both complete review datasets, see what reasoning costs | 10 min, together | under 1 min |
 | `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 20 reviews (10 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
-| `04_Mini_RAG` | `mini_rag.ipynb` | Search 250 McDonald's reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
+| `04_Extract_Information` | `extract_information.ipynb` | Turn review texts into tables: extract chain, places, type of visit, items, waiting time and aspects with a quote as evidence from 20 reviews (10 per chain), check the quotes and analyse the result | 20 min, plus self-check | depends on API latency |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
 | `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
 | `06_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
@@ -199,8 +199,8 @@ llm_fundamentals/
 │   └── chat_loop_tokens.ipynb
 ├── 03_Classify_Reviews/
 │   └── classify_reviews.ipynb
-├── 04_Mini_RAG/
-│   └── mini_rag.ipynb
+├── 04_Extract_Information/
+│   └── extract_information.ipynb
 ├── 05_Local_Model/
 │   └── local_model.ipynb
 ├── 06_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
@@ -245,7 +245,7 @@ llm_fundamentals/
 | `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: ratings of both chains, weighted vs. unweighted averages, review star distribution and sampling bias, three example texts, and a simple topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA and McDonald's reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
 | `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 20 reviews (10 per chain; two per star rating and chain): free text vs. JSON schema; two predefined prompts with prepared silver labels from the Moodle data zip and separate few-shot examples; accuracy, three runs on three reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
-| `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over 250 McDonald's sample reviews (switchable to IKEA), combined step by step with rank fusion. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
+| `04_Extract_Information/extract_information.ipynb` | Structured extraction with a JSON schema, built up in steps: one field from one made-up review; fixed choices, lists and `null` for missing values; aspects with polarity and a word-for-word quote. Applies the full schema to 20 sample reviews, builds one table per review and one per aspect, plots the negative aspects per chain and checks the quotes and the extracted chain against the data. About 25 requests per run. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
 
 ### `data/`: Yelp subset
@@ -276,7 +276,7 @@ Moodle (see [Data](#data)).
 ### No hidden helpers
 
 The notebooks show every step directly with existing libraries: pandas, scikit-learn,
-tiktoken, rank-bm25, sentence-transformers, Presidio and the OpenAI library. There is no
+tiktoken, Presidio and the OpenAI library. There is no
 course package to install.
 
 | Task | Where and how |
@@ -294,7 +294,7 @@ analysis, 12 coding). All tasks and sub-tasks are independent: each faulty
 snippet in part B has its own inputs and exactly one error, each coding task in part C
 has one TODO, and values needed for written answers are given in the task text. Its CSVs and model outcomes are synthetic, and prices are fixed
 exam assumptions rather than current quotes. Suggested answers in the separate concept
-check cover generation, hallucination, annotation agreement, RAG faithfulness, agents,
+check cover generation, hallucination, annotation agreement, faithfulness to a source, agents,
 deployment choices and the course's data-handling rules. Optional extensions in the
 practical notebooks are outside their original time budgets.
 
@@ -340,14 +340,14 @@ failures and measured usage. The workload estimates in the lecture reproduction 
 are explicitly input-only and use the dated slide assumptions.
 
 With the Moodle zip and local privacy model installed, run the practical-notebook wiring
-check using fake API, embedding and Ollama services with the network blocked:
+check using fake API and Ollama services with the network blocked:
 
 ```bash
 python scripts/validate_notebooks.py
 ```
 
 This runs real local redaction and uses temporary data. It does not test actual
-hosted-model quality, E5 downloads or Ollama performance. `constraints-tested.txt`
+hosted-model quality or Ollama performance. `constraints-tested.txt`
 records the directly installed dependency versions used for the offline checks on
 Linux/Python 3.11; it is not a complete transitive lock.
 
@@ -357,10 +357,10 @@ Linux/Python 3.11; it is not a complete transitive lock.
 |---|---|
 | `.env.example` | Template for a local `.env` file with `OPENAI_API_KEY`. Only needed outside Codespaces. |
 | `.gitattributes` | Keeps Linux line endings for scripts and notebooks, so they also run when edited on Windows. |
-| `.gitignore` | Keeps the key (`.env`), the local copy of the embedding model (`models/`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
+| `.gitignore` | Keeps the key (`.env`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
 | `pyproject.toml` | Settings of the code checks (Black and pylint). |
 | `constraints-tested.txt` | Direct dependency versions used by the offline validation on Linux/Python 3.11. |
-| `requirements.txt` | Python packages: `openai`, `tiktoken`, `pandas`, `scikit-learn`, `rank-bm25`, `sentence-transformers` (with CPU-only PyTorch), Jupyter and others. |
+| `requirements.txt` | Python packages: `openai`, `tiktoken`, `pandas`, `scikit-learn`, Presidio, Jupyter and others. |
 | `README.md` | This file. |
 
 Files created while you work, all ignored by git:

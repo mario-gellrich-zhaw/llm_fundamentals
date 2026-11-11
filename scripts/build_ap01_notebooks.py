@@ -37,6 +37,7 @@ import re
 from pathlib import Path
 from string import Template
 
+import pandas as pd
 from code_style import format_code
 from exam_metrics import exam_statistics
 from jupyter_client.manager import start_new_kernel
@@ -210,12 +211,9 @@ SETUP_INTRO = (
 
 SETUP_CODE = [
     "# Benötigte Bibliotheken importieren.\n"
-    "import re\n"
     "from pathlib import Path\n"
-    "from textwrap import fill\n"
     "\n"
     "import pandas as pd\n"
-    "from rank_bm25 import BM25Okapi\n"
     "from sklearn.metrics import accuracy_score",
     "# Reviews mit Gold Labels laden.\n"
     "# Den Datenordner vom aktuellen Arbeitsverzeichnis aus bestimmen.\n"
@@ -765,65 +763,89 @@ C1 = {
 }
 
 
+def c2_quotes():
+    """One verbatim and one altered quote for each of the first two reviews."""
+    texts = pd.read_csv(AP / "reviews.csv").head(2)
+    review_ids, quotes = [], []
+    for number, (_, row) in enumerate(texts.iterrows()):
+        verbatim = row["text"].split(". ")[0].rstrip(".")
+        words = verbatim.split()
+        # Typical deviations: different capitalization or an omitted word.
+        altered = (
+            verbatim.lower() if number == 0 else " ".join(words[:1] + words[2:])
+        )
+        assert verbatim in row["text"] and altered not in row["text"]
+        review_ids += [row["review_id"], row["review_id"]]
+        quotes += [verbatim, altered]
+    return review_ids, quotes
+
+
+C2_IDS, C2_QUOTES = c2_quotes()
+
 C2 = {
     "question": (
         "### C2 (4 Punkte)\n"
         "\n"
-        "Suchen Sie Reviews zu Montageproblemen. BM25-Index, Suchwörter und "
-        "die Auswahl der fünf besten Treffer sind vorgegeben.\n"
+        "Ein Modell extrahiert aus Reviews Aspekte (z.B. Personal, "
+        "Wartezeit) und liefert zu jedem Aspekt ein Belegzitat (`evidence`), "
+        "das wörtlich aus dem Review stammen soll. `quotes_C2` enthält vier "
+        "solche Zitate zu zwei Reviews (simulierte Modellausgabe).\n"
         "\n"
         "Die Teilaufgaben sind unabhängig voneinander lösbar.\n"
         "\n"
-        "**a) Code ergänzen (2 Punkte):** Berechnen Sie für jeden Review den "
-        "BM25-Score zur Suchanfrage.\n"
+        "**a) Code ergänzen (2 Punkte):** Prüfen Sie für jedes Zitat, ob es "
+        "wörtlich im Text des Reviews vorkommt.\n"
         "\n"
-        "**b)** Warum kann eine Suche mit Embeddings passende Reviews "
-        "finden, die BM25 übersieht? (1 Punkt)\n"
+        "**b)** Ein Zitat kommt wörtlich im Review vor. Ist damit belegt, "
+        "dass der extrahierte Aspekt und seine Stimmung stimmen? Begründen "
+        "Sie kurz. (1 Punkt)\n"
         "\n"
-        "**c)** Wie verwenden Sie Suchtreffer in einem überprüfbaren "
-        "RAG-Prompt, und welche inhaltliche Prüfung ist anschliessend nötig? "
-        "(1 Punkt)"
+        "**c)** Das JSON Schema für die Extraktion erlaubt beim Feld "
+        "`wait_minutes` (Wartezeit in Minuten) eine Zahl oder `null`. Warum "
+        "ist `null` als zulässiger Wert wichtig? (1 Punkt)"
     ),
     "answer": (
-        "a) `bm25_C2.get_scores(query_words_C2)` berechnet die Scores für "
-        "die vorgegebenen Suchwörter.\n"
+        "a) `row['evidence'] in row['text']` ist `True`, wenn das Zitat "
+        "wörtlich im Text vorkommt. Zwei der vier Zitate werden gefunden "
+        "(Anteil 0.5). Die beiden anderen weichen vom Text ab: andere "
+        "Gross-/Kleinschreibung bzw. ein ausgelassenes Wort.\n"
         "\n"
-        "b) BM25 braucht gemeinsame Wörter; Embeddings vergleichen die "
-        "Bedeutung und können dadurch auch andere Formulierungen finden.\n"
+        "b) Nein. Die Prüfung zeigt nur, dass die Wörter im Review stehen. "
+        "Ob das Zitat den Aspekt und die Stimmung inhaltlich stützt und ob "
+        "Aspekte fehlen, muss eine Person am Text beurteilen.\n"
         "\n"
-        "c) Die Treffer mit ihren Review-IDs als Kontext mitsenden und nur "
-        "daraus eine Antwort mit zitierten IDs verlangen. Danach prüfen, ob "
-        "die zitierten Texte die jeweiligen Aussagen tatsächlich stützen; "
-        "eine gültige ID allein genügt nicht."
+        "c) Viele Reviews nennen keine Wartezeit. Ohne `null` würde das "
+        "Schema eine Zahl erzwingen, und das Modell müsste einen Wert "
+        "erfinden."
     ),
     "skeleton": (
-        "# Vorgegeben: jeden Review in Wörter zerlegen (Kleinbuchstaben).\n"
-        "documents_C2 = []\n"
-        "for text in df['text']:\n"
-        "    words_C2 = re.findall(r'\\w+', text.lower())\n"
-        "    documents_C2.append(words_C2)\n"
+        "# Vorgegeben: Belegzitate eines Modells zu zwei Reviews.\n"
+        "quotes_C2 = pd.DataFrame(\n"
+        "    {\n"
+        f"        'review_id': {C2_IDS!r},\n"
+        f"        'evidence': {C2_QUOTES!r},\n"
+        "    }\n"
+        ")\n"
         "\n"
-        "# Vorgegeben: den BM25-Index aufbauen.\n"
-        "bm25_C2 = BM25Okapi(documents_C2)\n"
+        "# Vorgegeben: zu jedem Zitat den Text des Reviews ergänzen.\n"
+        "df_C2 = quotes_C2.merge(df[['review_id', 'text']], on='review_id')\n"
         "\n"
-        "# Vorgegeben: die Suchanfrage in Wörter zerlegen.\n"
-        "query_words_C2 = ['assembly', 'instructions', 'missing', 'parts']\n"
+        "# Für jedes Zitat prüfen, ob es wörtlich im Text vorkommt.\n"
+        "found_C2 = []\n"
+        "for _, row in df_C2.iterrows():\n"
+        "    found = ...  # TODO: Kommt das Zitat wörtlich im Text vor?\n"
+        "    found_C2.append(found)\n"
         "\n"
-        "# Vorgegeben: eine eigene Ergebnistabelle anlegen.\n"
-        "df_C2 = df[['review_id', 'text']].copy()\n"
-        "\n"
-        "# Für jeden Review den BM25-Score berechnen.\n"
-        "df_C2['bm25'] = ...  # TODO: BM25-Scores zur Suchanfrage berechnen.\n"
-        "\n"
-        "# Vorgegeben: die fünf besten Treffer auswählen und ausgeben.\n"
-        "output_C2 = df_C2.nlargest(5, 'bm25')\n"
-        "for line in output_C2.round(2).to_string(index=False).splitlines():\n"
-        "    print(fill(line, width=120))"
+        "# Vorgegeben: Ergebnis ausgeben.\n"
+        "df_C2['found'] = found_C2\n"
+        "print(df_C2[['review_id', 'evidence', 'found']].to_string("
+        "index=False))\n"
+        "print('Anteil gefundener Zitate:', df_C2['found'].mean())"
     ),
 }
 C2["code"] = C2["skeleton"].replace(
-    "...  # TODO: BM25-Scores zur Suchanfrage berechnen.",
-    "bm25_C2.get_scores(query_words_C2)",
+    "...  # TODO: Kommt das Zitat wörtlich im Text vor?",
+    "row['evidence'] in row['text']",
 )
 
 
@@ -1207,9 +1229,10 @@ CONCEPT_CHECKS = [
     ),
     (
         "Wissen und Halluzination",
-        "Ein Review behauptet, die Fleischbällchen seien italienisch. Eine "
-        "RAG-Antwort gibt diese Behauptung wieder und zitiert den Review "
-        "korrekt. Ist die Aussage der Antwort damit wahr? Begründen Sie.",
+        "Ein Review behauptet, die Fleischbällchen seien italienisch. Ein "
+        "Modell soll eine Frage nur anhand dieses Reviews beantworten. Es "
+        "gibt die Behauptung wieder und zitiert den Review korrekt. Ist die "
+        "Aussage der Antwort damit wahr? Begründen Sie.",
         "Nein. Die Antwort ist **faithful**: Sie gibt die Quelle richtig "
         "wieder. Die Quelle selbst kann aber falsch sein. Reviews sind "
         "persönliche Berichte und keine verlässliche Quelle für Fakten; "
@@ -1280,24 +1303,11 @@ CONCEPT_CHECKS = [
         "beurteilen.",
     ),
     (
-        "RAG und Judge",
-        "a) Für eine Frage wurden 10 Reviews als relevant gelabelt; 7 davon "
-        "stehen unter den Top 10 der Suche. Berechnen und interpretieren Sie "
-        "Recall@10.\n"
-        "\n"
-        "b) Alle in einer Antwort zitierten Review-IDs gehören zu den "
-        "abgerufenen Reviews. Warum genügt diese Prüfung nicht?\n"
-        "\n"
-        "c) Ein zweites Modell bewertet Zusammenfassungen (LLM-as-a-Judge). "
-        "Welche Verzerrungen kennen Sie, und was tun Sie dagegen?",
-        "a) Recall@10 = 7 / 10 = 0.7: 70 % der relevanten Reviews stehen "
-        "unter den Top 10.\n"
-        "\n"
-        "b) Die Prüfung zeigt nur, dass die zitierten Reviews abgerufen "
-        "wurden, nicht, dass sie die Aussage stützen. Dazu muss jede Aussage "
-        "mit dem zitierten Text verglichen werden.\n"
-        "\n"
-        "c) Ein Judge kann Antworten nach Position, Länge oder eigenem Stil "
+        "LLM-as-a-Judge",
+        "Ein zweites Modell bewertet Zusammenfassungen von Reviews "
+        "(LLM-as-a-Judge). Welche Verzerrungen kennen Sie, und was tun Sie "
+        "dagegen?",
+        "Ein Judge kann Antworten nach Position, Länge oder eigenem Stil "
         "bevorzugen. Dagegen: Reihenfolge tauschen, feste Bewertungsrubrik "
         "verwenden, eine Stichprobe mit menschlichen Urteilen vergleichen.",
     ),
@@ -1346,8 +1356,7 @@ CONCEPT_CHECKS = [
         "\n"
         "c) Das **SDK** genügt für einfache Abläufe. Ein **Framework** kann "
         "bei komplexen Abläufen mit Zustand, Tools und Agents helfen; "
-        "Wartungsaufwand und zusätzliche Abhängigkeiten sind mit abzuwägen. "
-        "Einfache RAG-Pipelines sind auch mit direktem Code gut umsetzbar.",
+        "Wartungsaufwand und zusätzliche Abhängigkeiten sind mit abzuwägen.",
     ),
     (
         "Anonymisierung und drei Regelwerke",

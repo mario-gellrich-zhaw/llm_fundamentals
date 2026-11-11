@@ -32,8 +32,5 @@ venv/
 Thumbs.db
 ~$*.pptx
 
-# Local copy of the embedding model (471 MB, too large for Git)
-models/
-
 # Slides
 slides/

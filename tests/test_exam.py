@@ -118,7 +118,7 @@ class ExamTests(unittest.TestCase):
             )
             completions = [
                 (BUILDER.C1, "runs_C1.nunique(axis=1) > 1"),
-                (BUILDER.C2, "bm25_C2.get_scores(query_words_C2)"),
+                (BUILDER.C2, "row['evidence'] in row['text']"),
                 (
                     BUILDER.C3,
                     "accuracy_score(test_C3['gold_label'], test_C3['label'])",
@@ -132,7 +132,9 @@ class ExamTests(unittest.TestCase):
                 )
                 exec(source, dict(namespace))
                 exec(source, namespace)
-            self.assertEqual(len(namespace["output_C2"]), 5)
+            self.assertEqual(
+                namespace["df_C2"]["found"].tolist(), [True, False, True, False]
+            )
             self.assertEqual(
                 f"{namespace['changed_C1'].mean():.3f}",
                 BUILDER.STATS["c1_fraction"],
