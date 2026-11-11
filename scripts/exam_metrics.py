@@ -1,7 +1,12 @@
 """Derive all reported exam statistics from the synthetic CSV files."""
 
 import pandas as pd
-from exam_settings import PRICE_INPUT_PER_M, PRICE_OUTPUT_PER_M, PROMPT_TOKENS
+from exam_settings import (
+    B1_TEST_TOKENS,
+    PRICE_INPUT_PER_M,
+    PRICE_OUTPUT_PER_M,
+    PROMPT_TOKENS,
+)
 
 
 def exam_statistics(directory):
@@ -43,7 +48,9 @@ def exam_statistics(directory):
         "injection_positive": str(injection["label"].eq("positive").sum()),
         "injection_runs": str(len(injection)),
         "b1_tokens": f"{input_tokens:,}".replace(",", "'"),
-        "b1_cost": f"{input_tokens / 1_000_000 * PRICE_INPUT_PER_M:.4f}",
+        "b1_test_tokens": f"{B1_TEST_TOKENS:,}".replace(",", "'"),
+        "b1_test_tokens_code": f"{B1_TEST_TOKENS:_}",
+        "b1_cost": f"{B1_TEST_TOKENS / 1_000_000 * PRICE_INPUT_PER_M:.3f}",
         "c1_fraction": f"{changed:.3f}",
         "c1_percent": f"{changed * 100:.1f} %",
         "prompt_tokens": str(PROMPT_TOKENS),

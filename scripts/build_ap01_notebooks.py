@@ -266,14 +266,17 @@ START_BANNER = (
     "Code-Zellen aus.</span>\n"
     "</div>\n"
     "\n"
-    "Die Aufgaben sind unabhängig "
-    "voneinander lösbar. Verändern Sie die "
-    "im Setup geladenen DataFrames nicht. In "
-    "Teil B bleibt der fehlerhafte "
-    "Originalcode im Aufgabentext sichtbar. "
-    "Tragen Sie die korrigierte Fassung in "
-    "die zugehörige Codezelle ein und führen "
-    "Sie diese aus. In Teil C ergänzen Sie "
+    "Alle Aufgaben und alle Teilaufgaben "
+    "sind unabhängig voneinander "
+    "lösbar: Keine Teilaufgabe setzt das "
+    "Ergebnis einer anderen voraus. "
+    "Verändern Sie die im Setup geladenen "
+    "DataFrames nicht. In Teil B bleibt der "
+    "fehlerhafte Originalcode im Aufgabentext "
+    "sichtbar. Tragen Sie die korrigierte "
+    "Fassung in die zugehörige Codezelle ein "
+    "und führen Sie diese aus. In Teil C "
+    "ergänzen Sie "
     "die Stellen mit `# TODO`; Zeilen unter "
     "«Vorgegeben» ändern Sie "
     "nicht.\n"
@@ -512,246 +515,171 @@ A3 = {
 
 B1 = {
     "question_head": render(
-        (
-            (
-                "### B1 (8 "
-                "Punkte)\n"
-                "\n"
-                "Berechnen Sie die Input-Kosten für alle "
-                "$reviews Reviews. Jeder Aufruf enthält "
-                "**$prompt_tokens Prompt-Tokens plus die "
-                "Review-Tokens** (`n_tokens`). Der Preis "
-                "gilt pro **1 Million "
-                "Tokens**.\n"
-                "\n"
-                "**Vorgegeben im Setup:** "
-                "`PRICE_INPUT_PER_M = $input_price` (USD "
-                "pro 1 Million Input-Tokens). Verwenden "
-                "Sie diesen bereits definierten "
-                "Parameter.\n"
-                "\n"
-                "**a) Code korrigieren (2 Punkte):** Der "
-                "unten gezeigte Code enthält **zwei "
-                "Fehler**. Schreiben Sie die korrigierte "
-                "Fassung in die Codezelle und führen Sie "
-                "sie aus. Die Kommentare sind als Gerüst "
-                "vorgegeben. "
-                "\n"
-                "\n"
-                "**b) Begründungen (4 Punkte, je 2):** "
-                "Begründen Sie jede Änderung in einem "
-                "Satz.\n"
-                "\n"
-                "**c) Einfluss der Prompt-Länge (2 "
-                "Punkte):** Verdoppeln sich die gesamten "
-                "Input-Kosten, wenn sich nur die "
-                "Prompt-Länge verdoppelt? Begründen Sie "
-                "kurz."
-            )
-        )
+        "### B1 (8 Punkte)\n"
+        "\n"
+        "Die Input-Kosten für die Klassifikation von Reviews sollen "
+        "berechnet werden. Jeder Aufruf enthält **$prompt_tokens "
+        "Prompt-Tokens plus die Review-Tokens** (`n_tokens`). Der Preis gilt "
+        "pro **1 Million Tokens**: `PRICE_INPUT_PER_M = $input_price` (USD) "
+        "ist im Setup definiert.\n"
+        "\n"
+        "Die Teilaufgaben a), b) und c) sind unabhängig voneinander lösbar. "
+        "Jeder der beiden Codeausschnitte enthält **genau einen Fehler**. "
+        "Schreiben Sie die korrigierte Fassung in die zugehörige Codezelle "
+        "und begründen Sie Ihre Änderung in einem Satz. Die Kommentare sind "
+        "als Gerüst vorgegeben."
     ),
-    "faulty": (
-        "# Prompt-Länge je Aufruf vorgeben.\n"
-        "PROMPT_TOKENS = 185\n"
-        "\n"
-        "# Input-Tokens aller Reviews berechnen.\n"
-        "input_tokens_B1 = df['n_tokens'].sum() + PROMPT_TOKENS\n"
-        "\n"
-        "# Input-Kosten in USD berechnen.\n"
-        "# PRICE_INPUT_PER_M wurde im Setup mit 0.10 USD pro Million "
-        "definiert.\n"
-        "cost_all_B1 = input_tokens_B1 / 1_000 * PRICE_INPUT_PER_M\n"
-        "\n"
-        "# Ergebnis ausgeben.\n"
-        "print('Kosten (USD):', round(cost_all_B1, 4))"
+    "parts": [
+        {
+            "text": render(
+                "**a) Anzahl Input-Tokens (3 Punkte):** Der Code soll die "
+                "Anzahl Input-Tokens für alle $reviews Reviews berechnen."
+            ),
+            "faulty": render(
+                "# B1 a) Prompt-Länge je Aufruf vorgeben.\n"
+                "PROMPT_TOKENS = $prompt_tokens\n"
+                "\n"
+                "# Input-Tokens aller Reviews berechnen.\n"
+                "input_tokens_B1 = df['n_tokens'].sum() + PROMPT_TOKENS\n"
+                "\n"
+                "# Ergebnis ausgeben.\n"
+                "print('Input-Tokens:', input_tokens_B1)"
+            ),
+            "fix": ("+ PROMPT_TOKENS\n", "+ PROMPT_TOKENS * len(df)\n"),
+        },
+        {
+            "text": render(
+                "**b) Kosten (3 Punkte):** Ein Testlauf hat "
+                "$b1_test_tokens Input-Tokens verbraucht. Diese Zahl ist "
+                "vorgegeben und hängt nicht von Teilaufgabe a) ab. Der Code "
+                "soll die Input-Kosten des Testlaufs in USD berechnen."
+            ),
+            "faulty": render(
+                "# B1 b) Anzahl Input-Tokens des Testlaufs vorgeben.\n"
+                "test_tokens_B1 = $b1_test_tokens_code\n"
+                "\n"
+                "# Input-Kosten in USD berechnen.\n"
+                "cost_B1 = test_tokens_B1 / 1_000 * PRICE_INPUT_PER_M\n"
+                "\n"
+                "# Ergebnis ausgeben.\n"
+                "print('Kosten (USD):', round(cost_B1, 4))"
+            ),
+            "fix": ("/ 1_000 *", "/ 1_000_000 *"),
+        },
+    ],
+    "question_tail": (
+        "**c) Einfluss der Prompt-Länge (2 Punkte):** Verdoppeln sich die "
+        "gesamten Input-Kosten, wenn sich nur die Prompt-Länge verdoppelt? "
+        "Begründen Sie kurz."
     ),
     "answer": render(
-        (
-            (
-                "**a) Korrigierter "
-                "Code:**\n"
-                "\n"
-                "Die folgende Codezelle berechnet die "
-                "Input-Kosten für alle Reviews. "
-                "Ergebnis: $b1_tokens Input-Tokens, rund "
-                "**USD $b1_cost**.\n"
-                "\n"
-                "**b) Begründungen:**\n"
-                "\n"
-                "1. Die $prompt_tokens Prompt-Tokens "
-                "fallen für jeden Review an: mit "
-                "`len(df)` multiplizieren.\n"
-                "2. Der Preis gilt pro Million Tokens: "
-                "durch `1_000_000` "
-                "teilen.\n"
-                "\n"
-                "**c) Einfluss der "
-                "Prompt-Länge:**\n"
-                "\n"
-                "Nein. Die Review-Tokens bleiben gleich; "
-                "nur der Prompt-Anteil verdoppelt sich. "
-                "Deshalb steigen die gesamten "
-                "Input-Kosten um weniger als das "
-                "Doppelte."
-            )
-        )
-    ),
-    "code": (
-        "# Prompt-Länge je Aufruf vorgeben.\n"
-        "PROMPT_TOKENS = 185\n"
+        "**a)** Korrektur: `PROMPT_TOKENS * len(df)`. Die $prompt_tokens "
+        "Prompt-Tokens fallen bei jedem Aufruf an, also einmal pro Review "
+        "und nicht nur einmal insgesamt. Ergebnis: $b1_tokens "
+        "Input-Tokens.\n"
         "\n"
-        "# Input-Tokens aller Reviews berechnen.\n"
-        "input_tokens_B1 = df['n_tokens'].sum() + PROMPT_TOKENS * len(df)\n"
+        "**b)** Korrektur: durch `1_000_000` statt durch `1_000` teilen. Der "
+        "Preis gilt pro Million Tokens. Ergebnis: USD $b1_cost.\n"
         "\n"
-        "# Input-Kosten in USD berechnen.\n"
-        "# PRICE_INPUT_PER_M wurde im Setup mit 0.10 USD pro Million "
-        "definiert.\n"
-        "cost_all_B1 = input_tokens_B1 / 1_000_000 * PRICE_INPUT_PER_M\n"
-        "\n"
-        "# Ergebnis ausgeben.\n"
-        "print('Kosten (USD):', round(cost_all_B1, 4))"
+        "**c)** Nein. Die Review-Tokens bleiben gleich; nur der Prompt-Anteil "
+        "verdoppelt sich. Deshalb steigen die gesamten Input-Kosten um "
+        "weniger als das Doppelte."
     ),
 }
-
-
-for field in ("code", "faulty"):
-    B1[field] = render(
-        B1[field]
-        .replace("PROMPT_TOKENS = 185", "PROMPT_TOKENS = $prompt_tokens")
-        .replace("0.10 USD", "$input_price USD")
-    )
 
 B2 = {
-    "question_head": render(
-        (
-            (
-                "### B2 (8 "
-                "Punkte)\n"
-                "\n"
-                "Ein LLM soll die **Stimmung des "
-                "Review-Texts** als `positive`, "
-                "`negative` oder `mixed` klassifizieren. "
-                "`mixed` bedeutet deutliches Lob **und** "
-                "deutliche "
-                "Kritik.\n"
-                "\n"
-                "Ein Review mit **4 Sternen** "
-                "lautet:\n"
-                "\n"
-                "> The chair is exceptionally "
-                "comfortable and the design is "
-                "outstanding. However, one leg arrived "
-                "broken and customer service refused to "
-                "replace "
-                "it.\n"
-                "\n"
-                "Der folgende Code legt Prompt und "
-                "Antwortformat fest. Er enthält **zwei "
-                "fachliche Fehler**, einen im Prompt und "
-                "einen im JSON-Schema.\n"
-                "\n"
-                "Schreiben Sie die korrigierte Fassung "
-                "in die Codezelle. Begründen Sie beide "
-                "Änderungen und geben Sie die für diesen "
-                "Review erwartete JSON-Antwort an. Die "
-                "Kommentare sind als Gerüst vorgegeben; "
-                "ein API-Aufruf ist nicht "
-                "nötig.\n"
-                "\n"
-                "**Bewertung:** korrigierter Code 2 "
-                "Punkte, Begründungen 4 Punkte (je 2), "
-                "erwartete JSON-Antwort 2 "
-                "Punkte."
-            )
-        )
+    "question_head": (
+        "### B2 (8 Punkte)\n"
+        "\n"
+        "Ein LLM soll die **Stimmung des Review-Texts** als `positive`, "
+        "`negative` oder `mixed` klassifizieren. `mixed` bedeutet deutliches "
+        "Lob **und** deutliche Kritik.\n"
+        "\n"
+        "Ein Review mit **4 Sternen** lautet:\n"
+        "\n"
+        "> The chair is exceptionally comfortable and the design is "
+        "outstanding. However, one leg arrived broken and customer service "
+        "refused to replace it.\n"
+        "\n"
+        "Die Teilaufgaben a), b) und c) sind unabhängig voneinander lösbar. "
+        "Jeder der beiden Codeausschnitte enthält **genau einen fachlichen "
+        "Fehler**. Schreiben Sie die korrigierte Fassung in die zugehörige "
+        "Codezelle und begründen Sie Ihre Änderung in einem Satz. Die "
+        "Kommentare sind als Gerüst vorgegeben; ein API-Aufruf ist nicht "
+        "nötig."
     ),
-    "faulty": (
-        "# Prompt für die Klassifikation festlegen.\n"
-        "instructions_B2 = (\n"
-        "    'Classify customer review sentiment using the star rating, not "
-        "the review text. '\n"
-        "    'Use positive for praise, negative for criticism, and mixed for "
-        "both. '\n"
-        "    'Return a JSON object with the field sentiment.'\n"
-        ")\n"
-        "\n"
-        "# Antwortformat und zulässige Labels festlegen.\n"
-        "schema_B2 = {\n"
-        "    'type': 'object',\n"
-        "    'properties': {'sentiment': {'type': 'string', 'enum': "
-        "['positive', 'negative']}},\n"
-        "    'required': ['sentiment'],\n"
-        "    'additionalProperties': False,\n"
-        "}\n"
-        "\n"
-        "# Zulässige Labels zur Kontrolle ausgeben.\n"
-        "print('Zulässige Labels:', "
-        "schema_B2['properties']['sentiment']['enum'])"
-    ),
-    "answer": render(
-        (
-            (
-                "1. **Den Text statt der Sterne "
-                "bewerten:** Im Prompt muss stehen, dass "
-                "die Stimmung des Review-Texts zählt und "
-                "die Sterne ignoriert werden. Hier "
-                "enthält der Text trotz 4 Sternen "
-                "deutliche "
-                "Kritik.\n"
-                "2. **`mixed` im Schema zulassen:** Die "
-                "erlaubten Werte müssen `positive`, "
-                "`negative` und `mixed` umfassen. Sonst "
-                "kann das Modell die verlangte gemischte "
-                "Stimmung nicht schema-konform "
-                "ausgeben.\n"
+    "parts": [
+        {
+            "text": (
+                "**a) Prompt (3 Punkte):** Der Code legt den Prompt für die "
+                "Klassifikation fest."
+            ),
+            "faulty": (
+                "# B2 a) Prompt für die Klassifikation festlegen.\n"
+                "instructions_B2 = (\n"
+                "    'Classify the sentiment of a customer review. '\n"
+                "    'Use the star rating, not the review text. '\n"
+                "    'Use positive for praise, negative for criticism and "
+                "mixed for both. '\n"
+                "    'Return a JSON object with the field sentiment.'\n"
+                ")"
+            ),
+            "fix": (
+                "Use the star rating, not the review text.",
+                "Use the review text, not the star rating.",
+            ),
+        },
+        {
+            "text": (
+                "**b) JSON-Schema (3 Punkte):** Der Code legt das "
+                "Antwortformat und die zulässigen Labels fest."
+            ),
+            "faulty": (
+                "# B2 b) Antwortformat und zulässige Labels festlegen.\n"
+                "schema_B2 = {\n"
+                "    'type': 'object',\n"
+                "    'properties': {'sentiment': {'type': 'string', 'enum': "
+                "['positive', 'negative']}},\n"
+                "    'required': ['sentiment'],\n"
+                "    'additionalProperties': False,\n"
+                "}\n"
                 "\n"
-                'Erwartete Antwort: `{"sentiment": '
-                '"mixed"}`. Der Text lobt den '
-                "aussergewöhnlichen Komfort und das "
-                "hervorragende Design und kritisiert den "
-                "Defekt sowie den Kundenservice. Ein "
-                "korrigierter Prompt mit passendem "
-                "Schema ermöglicht die richtige Antwort, "
-                "garantiert aber nicht deren inhaltliche "
-                "Richtigkeit."
-            )
-        )
+                "# Zulässige Labels zur Kontrolle ausgeben.\n"
+                "print('Zulässige Labels:', "
+                "schema_B2['properties']['sentiment']['enum'])"
+            ),
+            "fix": (
+                "'enum': ['positive', 'negative']",
+                "'enum': ['positive', 'negative', 'mixed']",
+            ),
+        },
+    ],
+    "question_tail": (
+        "**c) Erwartete Antwort (2 Punkte):** Welche JSON-Antwort erwarten "
+        "Sie bei einer korrekten Klassifikation dieses Reviews? Die Antwort "
+        'hat die Form `{"sentiment": "..."}`. Begründen Sie kurz anhand '
+        "des Texts."
     ),
-    "code": (
-        "# Prompt für die Klassifikation festlegen.\n"
-        "instructions_B2 = (\n"
-        "    'Classify customer review sentiment using the review text; "
-        "ignore the star rating. '\n"
-        "    'Use positive for praise, negative for criticism, and mixed for "
-        "both. '\n"
-        "    'Return a JSON object with the field sentiment.'\n"
-        ")\n"
+    "answer": (
+        "**a)** Korrektur: den Text statt der Sterne bewerten, z.B. `Use the "
+        "review text, not the star rating.` Verlangt ist die Stimmung des "
+        "Review-Texts; die Sterne passen nicht immer dazu.\n"
         "\n"
-        "# Antwortformat und zulässige Labels festlegen.\n"
-        "schema_B2 = {\n"
-        "    'type': 'object',\n"
-        "    'properties': {'sentiment': {'type': 'string', 'enum': "
-        "['positive', 'negative', 'mixed']}},\n"
-        "    'required': ['sentiment'],\n"
-        "    'additionalProperties': False,\n"
-        "}\n"
+        "**b)** Korrektur: `mixed` in die Liste `enum` aufnehmen. Sonst kann "
+        "das Modell eine gemischte Stimmung nicht schema-konform ausgeben.\n"
         "\n"
-        "# Zulässige Labels zur Kontrolle ausgeben.\n"
-        "print('Zulässige Labels:', "
-        "schema_B2['properties']['sentiment']['enum'])"
+        '**c)** `{"sentiment": "mixed"}`. Der Text lobt Komfort und Design '
+        "deutlich und kritisiert ebenso deutlich den Defekt und den "
+        "Kundenservice; die 4 Sterne spielen keine Rolle."
     ),
 }
-B2["code"] = (
-    B2["faulty"]
-    .replace(
-        "using the star rating, not the review text",
-        "using the review text; ignore the star rating",
-    )
-    .replace(
-        "'enum': ['positive', 'negative']",
-        "'enum': ['positive', 'negative', 'mixed']",
-    )
-)
+
+# The model solution of each part is its faulty code with one replacement.
+for exam_task in (B1, B2):
+    for exam_part in exam_task["parts"]:
+        assert exam_part["faulty"].count(exam_part["fix"][0]) == 1
+        exam_part["code"] = exam_part["faulty"].replace(*exam_part["fix"])
+
 
 C1 = {
     "question": render(
@@ -838,119 +766,46 @@ C1 = {
 
 
 C2 = {
-    "question": render(
-        (
-            (
-                "### C2 (4 "
-                "Punkte)\n"
-                "\n"
-                "Suchen Sie Reviews zu Montageproblemen. "
-                "BM25-Index, Suchwörter und eine "
-                "Ergebnistabelle sind "
-                "vorgegeben.\n"
-                "\n"
-                "**Code ergänzen (2 Punkte, je 1):** "
-                "Berechnen Sie für jeden Review den "
-                "BM25-Score zur Suchanfrage. Wählen Sie "
-                "dann die fünf besten Treffer "
-                "aus.\n"
-                "\n"
-                "a) Warum kann eine Suche mit Embeddings "
-                "passende Reviews finden, die BM25 "
-                "übersieht? (1 "
-                "Punkt)\n"
-                "\n"
-                "b) Wie verwenden Sie die Treffer in "
-                "einem überprüfbaren RAG-Prompt, und "
-                "welche inhaltliche Prüfung ist "
-                "anschliessend nötig? (1 "
-                "Punkt)"
-            )
-        )
+    "question": (
+        "### C2 (4 Punkte)\n"
+        "\n"
+        "Suchen Sie Reviews zu Montageproblemen. BM25-Index, Suchwörter und "
+        "die Auswahl der fünf besten Treffer sind vorgegeben.\n"
+        "\n"
+        "Die Teilaufgaben sind unabhängig voneinander lösbar.\n"
+        "\n"
+        "**a) Code ergänzen (2 Punkte):** Berechnen Sie für jeden Review den "
+        "BM25-Score zur Suchanfrage.\n"
+        "\n"
+        "**b)** Warum kann eine Suche mit Embeddings passende Reviews "
+        "finden, die BM25 übersieht? (1 Punkt)\n"
+        "\n"
+        "**c)** Wie verwenden Sie Suchtreffer in einem überprüfbaren "
+        "RAG-Prompt, und welche inhaltliche Prüfung ist anschliessend nötig? "
+        "(1 Punkt)"
     ),
-    "answer": render(
-        (
-            (
-                "`bm25_C2.get_scores(query_words_C2)` "
-                "berechnet die Scores für die "
-                "vorgegebenen Suchwörter. "
-                "`df_C2.nlargest(5, 'bm25')` wählt die "
-                "fünf höchsten Scores "
-                "aus.\n"
-                "\n"
-                "a) BM25 braucht gemeinsame Wörter; "
-                "Embeddings vergleichen die Bedeutung "
-                "und können dadurch auch andere "
-                "Formulierungen "
-                "finden.\n"
-                "\n"
-                "b) Die Treffer mit ihren Review-IDs als "
-                "Kontext mitsenden und nur daraus eine "
-                "Antwort mit zitierten IDs verlangen. "
-                "Danach prüfen, ob die zitierten Texte "
-                "die jeweiligen Aussagen tatsächlich "
-                "stützen; eine gültige ID allein genügt "
-                "nicht."
-            )
-        )
-    ),
-    "code": (
-        "# Vorgegeben: df wurde im Setup aus reviews.csv geladen.\n"
-        "# Eine leere Liste für die zerlegten Reviews anlegen.\n"
-        "documents_C2 = []\n"
+    "answer": (
+        "a) `bm25_C2.get_scores(query_words_C2)` berechnet die Scores für "
+        "die vorgegebenen Suchwörter.\n"
         "\n"
-        "# Vorgegeben: jeden Review in Wörter zerlegen.\n"
-        "for text in df['text']:\n"
-        "    # Wörter unabhängig von ihrer Grossschreibung erkennen.\n"
-        "    words_C2 = re.findall(r'\\w+', text.lower())\n"
+        "b) BM25 braucht gemeinsame Wörter; Embeddings vergleichen die "
+        "Bedeutung und können dadurch auch andere Formulierungen finden.\n"
         "\n"
-        "    # Die Wörter dieses Reviews zur Liste hinzufügen.\n"
-        "    documents_C2.append(words_C2)\n"
-        "\n"
-        "# Vorgegeben: den BM25-Index aus den Wortlisten aufbauen.\n"
-        "bm25_C2 = BM25Okapi(documents_C2)\n"
-        "\n"
-        "# Vorgegeben: Suchanfrage festlegen.\n"
-        "query_C2 = 'assembly instructions missing parts'\n"
-        "\n"
-        "# Vorgegeben: auch die Suchanfrage in Wörter zerlegen.\n"
-        "query_words_C2 = re.findall(r'\\w+', query_C2.lower())\n"
-        "\n"
-        "# Vorgegeben: eine eigene Ergebnistabelle anlegen.\n"
-        "df_C2 = df[['review_id', 'text']].copy()\n"
-        "\n"
-        "# Für jeden Review den BM25-Score berechnen.\n"
-        "df_C2['bm25'] = bm25_C2.get_scores(query_words_C2)\n"
-        "\n"
-        "# Die fünf besten Treffer auswählen.\n"
-        "output_C2 = df_C2.nlargest(5, 'bm25')\n"
-        "\n"
-        "# Vorgegeben: Treffer ausgeben.\n"
-        "# Lange Ausgabezeilen bei 120 Zeichen umbrechen.\n"
-        "for line in output_C2.round(2).to_string(index=False).splitlines():\n"
-        "    print(fill(line, width=120))"
+        "c) Die Treffer mit ihren Review-IDs als Kontext mitsenden und nur "
+        "daraus eine Antwort mit zitierten IDs verlangen. Danach prüfen, ob "
+        "die zitierten Texte die jeweiligen Aussagen tatsächlich stützen; "
+        "eine gültige ID allein genügt nicht."
     ),
     "skeleton": (
-        "# Vorgegeben: df wurde im Setup aus reviews.csv geladen.\n"
-        "# Eine leere Liste für die zerlegten Reviews anlegen.\n"
-        "documents_C2 = []\n"
+        "# Vorgegeben: jeden Review in Wörter zerlegen (Kleinbuchstaben).\n"
+        "documents_C2 = [re.findall(r'\\w+', text.lower()) for text in "
+        "df['text']]\n"
         "\n"
-        "# Vorgegeben: jeden Review in Wörter zerlegen.\n"
-        "for text in df['text']:\n"
-        "    # Wörter unabhängig von ihrer Grossschreibung erkennen.\n"
-        "    words_C2 = re.findall(r'\\w+', text.lower())\n"
-        "\n"
-        "    # Die Wörter dieses Reviews zur Liste hinzufügen.\n"
-        "    documents_C2.append(words_C2)\n"
-        "\n"
-        "# Vorgegeben: den BM25-Index aus den Wortlisten aufbauen.\n"
+        "# Vorgegeben: den BM25-Index aufbauen.\n"
         "bm25_C2 = BM25Okapi(documents_C2)\n"
         "\n"
-        "# Vorgegeben: Suchanfrage festlegen.\n"
-        "query_C2 = 'assembly instructions missing parts'\n"
-        "\n"
-        "# Vorgegeben: auch die Suchanfrage in Wörter zerlegen.\n"
-        "query_words_C2 = re.findall(r'\\w+', query_C2.lower())\n"
+        "# Vorgegeben: die Suchanfrage in Wörter zerlegen.\n"
+        "query_words_C2 = ['assembly', 'instructions', 'missing', 'parts']\n"
         "\n"
         "# Vorgegeben: eine eigene Ergebnistabelle anlegen.\n"
         "df_C2 = df[['review_id', 'text']].copy()\n"
@@ -958,15 +813,16 @@ C2 = {
         "# Für jeden Review den BM25-Score berechnen.\n"
         "df_C2['bm25'] = ...  # TODO: BM25-Scores zur Suchanfrage berechnen.\n"
         "\n"
-        "# Die fünf besten Treffer auswählen.\n"
-        "output_C2 = ...  # TODO: Die besten Treffer auswählen.\n"
-        "\n"
-        "# Vorgegeben: Treffer ausgeben.\n"
-        "# Lange Ausgabezeilen bei 120 Zeichen umbrechen.\n"
+        "# Vorgegeben: die fünf besten Treffer auswählen und ausgeben.\n"
+        "output_C2 = df_C2.nlargest(5, 'bm25')\n"
         "for line in output_C2.round(2).to_string(index=False).splitlines():\n"
         "    print(fill(line, width=120))"
     ),
 }
+C2["code"] = C2["skeleton"].replace(
+    "...  # TODO: BM25-Scores zur Suchanfrage berechnen.",
+    "bm25_C2.get_scores(query_words_C2)",
+)
 
 
 C3 = {
@@ -981,38 +837,40 @@ C3 = {
                 "`test_C3` enthält jeweils die Daten "
                 "eines Modells.\n"
                 "\n"
-                "**Code ergänzen (1 Punkt):** Berechnen "
-                "Sie mit `accuracy_score()` die "
-                "Übereinstimmung der Vorhersagen mit den "
-                "verlässlichen Referenzlabels. Die "
+                "Die Teilaufgaben sind unabhängig "
+                "voneinander lösbar. Die Messwerte aus "
+                "denselben Daten sind vorgegeben; für "
+                "b) bis d) brauchen Sie Ihren Code aus "
+                "a) nicht:\n"
+                "\n"
+                "| Modell | Accuracy | Sekunden pro "
+                "Review | API-Kosten pro 10'000 Reviews "
+                "(USD) |\n"
+                "|---|---:|---:|---:|\n"
+                "| `gpt-6-luna` | $api_accuracy | "
+                "$api_seconds | $api_cost |\n"
+                "| `qwen3:1.7b` | $local_accuracy | "
+                "$local_seconds | $local_cost |\n"
+                "\n"
+                "**a) Code ergänzen (1 Punkt):** "
+                "Berechnen Sie mit `accuracy_score()` "
+                "die Übereinstimmung der Vorhersagen mit "
+                "den verlässlichen Referenzlabels. Die "
                 "Spalten sind in den Datenhinweisen "
-                "beschrieben.\n"
+                "beschrieben. Ihre Ausgabe sollte die "
+                "Accuracy-Werte der Tabelle "
+                "ergeben.\n"
                 "\n"
-                "Die Messwerte aus denselben Daten "
-                "sind:\n"
+                "**b)** Empfehlen Sie anhand der Tabelle "
+                "ein Modell, wenn externe Verarbeitung "
+                "erlaubt ist und zuverlässige Labels "
+                "wichtig sind. (1 Punkt)\n"
                 "\n"
-                "| Modell | Sekunden pro Review | "
-                "API-Kosten pro 10'000 Reviews (USD) "
-                "|\n"
-                "|---|---:|---:|\n"
-                "| `gpt-6-luna` | $api_seconds | "
-                "$api_cost "
-                "|\n"
-                "| `qwen3:1.7b` | $local_seconds | "
-                "$local_cost "
-                "|\n"
-                "\n"
-                "a) Empfehlen Sie anhand von Accuracy, "
-                "Antwortzeit und API-Kosten ein Modell, "
-                "wenn externe Verarbeitung erlaubt ist "
-                "und zuverlässige Labels wichtig sind. "
-                "(1 Punkt)\n"
-                "\n"
-                "b) Nennen Sie eine Anforderung, die "
+                "**c)** Nennen Sie eine Anforderung, die "
                 "trotzdem für das lokale Modell spricht. "
                 "(1 Punkt)\n"
                 "\n"
-                "c) Bedeutet «keine API-Kosten» auch "
+                "**d)** Bedeutet «keine API-Kosten» auch "
                 "«kostenloser Betrieb»? Begründen Sie. "
                 "(1 Punkt)"
             )
@@ -1021,7 +879,11 @@ C3 = {
     "answer": render(
         (
             (
-                "a) Wenn zuverlässige Labels Vorrang "
+                "a) `accuracy_score(test_C3['gold_label'], test_C3['label'])` "
+                "vergleicht die Vorhersagen mit den Gold "
+                "Labels.\n"
+                "\n"
+                "b) Wenn zuverlässige Labels Vorrang "
                 "haben, empfiehlt sich für diese Daten "
                 "**$recommended_model**. Die Accuracy "
                 "beträgt $api_accuracy für `gpt-6-luna` "
@@ -1033,12 +895,12 @@ C3 = {
                 "anders begründete Abwägung wird "
                 "ebenfalls akzeptiert.\n"
                 "\n"
-                "b) Eine Vorgabe, dass Reviews auf dem "
+                "c) Eine Vorgabe, dass Reviews auf dem "
                 "eigenen Rechner bleiben müssen, spricht "
                 "für das lokale "
                 "Modell.\n"
                 "\n"
-                "c) Nein. Auch ohne API-Kosten fallen "
+                "d) Nein. Auch ohne API-Kosten fallen "
                 "Kosten für Hardware, Strom und Betrieb "
                 "an."
             )
@@ -1111,10 +973,10 @@ def code(text, task_id=None):
     }
 
 
-def correction_skeleton(task):
-    """Keep the comment scaffold for a correction task."""
+def correction_skeleton(part):
+    """Keep the comment scaffold of one faulty code snippet."""
     return "\n\n".join(
-        line for line in task["faulty"].splitlines() if line.startswith("#")
+        line for line in part["faulty"].splitlines() if line.startswith("#")
     )
 
 
@@ -1135,24 +997,24 @@ def faulty_output(src):
 
 
 def b_question(task):
-    """Show a faulty program and its computed output."""
-    return (
-        task["question_head"]
-        + "\n\n**Fehlerhafter Originalcode:**\n\n```python\n"
-        + format_code(task["faulty"]).rstrip()
-        + "\n```\n\n"
-        + (
-            (
-                "**Ausgabe des fehlerhaften Codes** "
-                "(nicht das gesuchte "
-                "Ergebnis):\n"
-                "\n"
-            )
+    """Show each independent faulty snippet and its computed output."""
+    blocks = [task["question_head"]]
+    for part in task["parts"]:
+        block = (
+            part["text"]
+            + "\n\nFehlerhafter Originalcode:\n\n```python\n"
+            + format_code(part["faulty"]).rstrip()
+            + "\n```"
         )
-        + "```text\n"
-        + faulty_output(task["faulty"])
-        + "\n```"
-    )
+        output = faulty_output(part["faulty"])
+        if output:
+            block += (
+                "\n\nAusgabe des fehlerhaften Codes (nicht das gesuchte "
+                "Ergebnis):\n\n```text\n" + output + "\n```"
+            )
+        blocks.append(block)
+    blocks.append(task["question_tail"])
+    return "\n\n".join(blocks)
 
 
 def build(solution):
@@ -1192,14 +1054,14 @@ def build(solution):
             )
     cells.append(md("---\n## Teil B – Fehleranalyse (16 Punkte)"))
     for task in (B1, B2):
-        cells += [
-            md(b_question(task)),
-            answer_cell(task),
-            code(
-                task["code"] if solution else correction_skeleton(task),
-                task["question_head"].split()[1],
-            ),
-        ]
+        cells += [md(b_question(task)), answer_cell(task)]
+        for part in task["parts"]:
+            cells.append(
+                code(
+                    part["code"] if solution else correction_skeleton(part),
+                    task["question_head"].split()[1],
+                )
+            )
     cells.append(md("---\n## Teil C – Python-Code ergänzen (12 Punkte)"))
     for task in (C1, C2, C3):
         cells += [

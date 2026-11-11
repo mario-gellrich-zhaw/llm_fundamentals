@@ -100,30 +100,37 @@ class ExamTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             for source in BUILDER.SETUP_CODE:
                 exec(source, namespace)
-            exec(BUILDER.B1["code"], namespace)
+            # Each correction part runs on its own, without the other part.
+            for task in (BUILDER.B1, BUILDER.B2):
+                for part in task["parts"]:
+                    exec(part["code"], dict(namespace))
+                    exec(part["code"], namespace)
             self.assertEqual(
-                f"{namespace['cost_all_B1']:.4f}", BUILDER.STATS["b1_cost"]
+                f"{namespace['input_tokens_B1']:,}".replace(",", "'"),
+                BUILDER.STATS["b1_tokens"],
+            )
+            self.assertEqual(
+                f"{namespace['cost_B1']:.3f}", BUILDER.STATS["b1_cost"]
+            )
+            self.assertIn(
+                "mixed",
+                namespace["schema_B2"]["properties"]["sentiment"]["enum"],
             )
             completions = [
-                (BUILDER.C1, ["runs_C1.nunique(axis=1) > 1"]),
-                (
-                    BUILDER.C2,
-                    [
-                        "bm25_C2.get_scores(query_words_C2)",
-                        "df_C2.nlargest(5, 'bm25')",
-                    ],
-                ),
+                (BUILDER.C1, "runs_C1.nunique(axis=1) > 1"),
+                (BUILDER.C2, "bm25_C2.get_scores(query_words_C2)"),
                 (
                     BUILDER.C3,
-                    ["accuracy_score(test_C3['gold_label'], test_C3['label'])"],
+                    "accuracy_score(test_C3['gold_label'], test_C3['label'])",
                 ),
             ]
-            for task, expressions in completions:
-                source = task["skeleton"]
-                for expression in expressions:
-                    source = source.replace(
-                        "...  # TODO:", expression + "  # TODO:", 1
-                    )
+            for task, expression in completions:
+                # Every coding task has exactly one independent TODO.
+                self.assertEqual(task["skeleton"].count("# TODO"), 1)
+                source = task["skeleton"].replace(
+                    "...  # TODO:", expression + "  # TODO:"
+                )
+                exec(source, dict(namespace))
                 exec(source, namespace)
             self.assertEqual(len(namespace["output_C2"]), 5)
             self.assertEqual(
@@ -135,6 +142,11 @@ class ExamTests(unittest.TestCase):
             (BUILDER.C3, "api_cost"),
         ):
             self.assertIn(BUILDER.STATS[key], task["answer"])
+        # The C3 table states the accuracies, so b) to d) need no own code.
+        for key in ("api_accuracy", "local_accuracy"):
+            self.assertIn(BUILDER.STATS[key], BUILDER.C3["question"])
+        for key in ("b1_tokens", "b1_cost"):
+            self.assertIn(BUILDER.STATS[key], BUILDER.B1["answer"])
 
     def test_builds_have_stable_ids_and_exactly_forty_points(self):
         """Check deterministic cells and the unchanged grading structure."""

@@ -309,7 +309,9 @@ and calling the API with a cache.
 ### Practice exam and validation
 
 The exam retains the reference format: eight tasks, 40 points (12 concepts, 16 error
-analysis, 12 coding). Its CSVs and model outcomes are synthetic, and prices are fixed
+analysis, 12 coding). All tasks and sub-tasks are independent: each faulty
+snippet in part B has its own inputs and exactly one error, each coding task in part C
+has one TODO, and values needed for written answers are given in the task text. Its CSVs and model outcomes are synthetic, and prices are fixed
 exam assumptions rather than current quotes. Suggested answers in the separate concept
 check cover generation, hallucination, annotation agreement, RAG faithfulness, agents,
 deployment choices and the course's data-handling rules. Optional extensions in the
