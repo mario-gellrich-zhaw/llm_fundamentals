@@ -212,6 +212,7 @@ SETUP_CODE = [
     "# Benötigte Bibliotheken importieren.\n"
     "import re\n"
     "from pathlib import Path\n"
+    "from textwrap import fill\n"
     "\n"
     "import pandas as pd\n"
     "from rank_bm25 import BM25Okapi\n"
@@ -925,7 +926,9 @@ C2 = {
         "output_C2 = df_C2.nlargest(5, 'bm25')\n"
         "\n"
         "# Vorgegeben: Treffer ausgeben.\n"
-        "print(output_C2.round(2).to_string(index=False))"
+        "# Lange Ausgabezeilen bei 120 Zeichen umbrechen.\n"
+        "for line in output_C2.round(2).to_string(index=False).splitlines():\n"
+        "    print(fill(line, width=120))"
     ),
     "skeleton": (
         "# Vorgegeben: df wurde im Setup aus reviews.csv geladen.\n"
@@ -959,7 +962,9 @@ C2 = {
         "output_C2 = ...  # TODO: Die besten Treffer auswählen.\n"
         "\n"
         "# Vorgegeben: Treffer ausgeben.\n"
-        "print(output_C2.round(2).to_string(index=False))"
+        "# Lange Ausgabezeilen bei 120 Zeichen umbrechen.\n"
+        "for line in output_C2.round(2).to_string(index=False).splitlines():\n"
+        "    print(fill(line, width=120))"
     ),
 }
 

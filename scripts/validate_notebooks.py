@@ -43,6 +43,7 @@ from unittest.mock import patch
 
 import matplotlib
 import numpy as np
+import pandas as pd
 from openai.types.decision import Decision
 from openai.types.responses import Response
 
@@ -297,9 +298,26 @@ def main():
                 }
                 assert (data / "processed/silver_labels.csv").exists()
                 assert namespace["test"].groupby("chain").size().to_dict() == {
-                    "IKEA": 25,
-                    "McDonald's": 25,
+                    "IKEA": 20,
+                    "McDonald's": 20,
                 }
+                assert namespace["test"].groupby("stars").size().to_dict() == {
+                    1: 8,
+                    2: 8,
+                    3: 8,
+                    4: 8,
+                    5: 8,
+                }
+                assert namespace["test"].groupby(
+                    ["chain", "stars"]
+                ).size().eq(4).all()
+                expected = pd.read_csv(data / "silver_reference.csv")
+                actual = namespace["test"][["id", "silver"]]
+                pd.testing.assert_frame_equal(
+                    actual.sort_values("id").reset_index(drop=True),
+                    expected.sort_values("id").reset_index(drop=True),
+                )
+                assert namespace["runs"].shape == (3, 5)
             if folder.name.startswith("04_"):
                 assert set(namespace["df"]["chain"]) == {"McDonald's"}
             if folder.name.startswith("05_"):

@@ -165,7 +165,7 @@ the outputs before you share a notebook.
 |---|---|---|---|---|
 | `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, compare both review distributions, inspect examples and prepare an anonymized sample of 250 reviews per chain | 10–15 min, plus self-check | under 1 min |
 | `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compare the cost of reading both complete review datasets, see what reasoning costs | 10 min, together | under 1 min |
-| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 50 reviews (25 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
+| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 40 reviews (20 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
 | `04_Mini_RAG` | `mini_rag.ipynb` | Search 250 McDonald's reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
 | `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
@@ -177,13 +177,14 @@ because answers of the model are saved in `.cache/`.
 **How the notebooks keep it simple and fast**
 
 - Every step starts with **one example** (one review, one request) before it is applied to many.
-- The API notebooks use **small samples**: 500 anonymized reviews in total (250 per chain), 50 for
+- The API notebooks use **small samples**: 500 anonymized reviews in total (250 per chain), 40 for
   classification, 10 for the model comparison.
-- Normal requests use **low reasoning effort**; only the silver labels use high effort.
+- Classification requests use **low reasoning effort**. Silver labels are prepared once
+  by the lecturer and included in the Moodle data zip.
   The local model answers without thinking by default.
 
 `01_Explore_Yelp_Data` needs no API key. Run the notebooks 01–05 in order: 03 and 04 use
-the sample created in 01, and `05_Local_Model` uses the silver labels created in
+the sample created in 01, and `05_Local_Model` uses the prepared silver labels saved in
 `03_Classify_Reviews`.
 
 ## Folder structure
@@ -251,7 +252,7 @@ llm_fundamentals/
 |---|---|
 | `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: ratings of both chains, weighted vs. unweighted averages, review star distribution and sampling bias, three example texts, and a simple topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
 | `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA and McDonald's reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
-| `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 50 reviews (5 per chain and star rating): free text vs. JSON schema; two predefined prompts with silver labels and separate few-shot examples; accuracy, five runs on five reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
+| `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 40 reviews (20 per chain; four per star rating and chain): free text vs. JSON schema; two predefined prompts with prepared silver labels from the Moodle data zip and separate few-shot examples; accuracy, five runs on three reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
 | `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over 250 McDonald's sample reviews (switchable to IKEA), combined step by step with rank fusion. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
 
@@ -385,7 +386,8 @@ Files created while you work, all ignored by git:
 |---|---|
 | `.cache/llm-v2/` | Completed answers to sanitized requests and empty coordination lock files. Removing cached answers causes new paid requests. |
 | `data/processed/reviews_sample.csv` | Anonymized sample of 500 reviews from notebook 01, used in notebooks 03 and 04. |
-| `data/processed/silver_labels.csv` | Up to 50 reviews with silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
+| `data/silver_reference.csv` | Prepared sample IDs and silver labels for 40 reviews, included in the Moodle data zip. |
+| `data/processed/silver_labels.csv` | 40 reviews with prepared silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
 
 ## Licence
 

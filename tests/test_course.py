@@ -21,7 +21,7 @@ import pandas as pd
 from openai.types.decision import Decision
 from openai.types.responses import Response
 
-from llm_course import client, privacy
+from llm_course import client, privacy, wrap_text
 from llm_course.evaluation import parse_label, response_label
 
 
@@ -309,6 +309,17 @@ class CacheTests(unittest.TestCase):
 
 class OutputTests(unittest.TestCase):
     """Check extraction of model labels and explicit failures."""
+
+    def test_long_output_wraps_without_losing_paragraphs_or_text(self):
+        """Wrap reviews, long tokens and existing multi-paragraph answers."""
+        text = "First paragraph.\n\n" + "Ä review " * 45 + "\n" + "x" * 241
+        wrapped = wrap_text(text)
+        self.assertTrue(all(len(line) <= 120 for line in wrapped.splitlines()))
+        self.assertTrue(wrapped.startswith("First paragraph.\n\n"))
+        self.assertEqual("".join(wrapped.split()), "".join(text.split()))
+        self.assertEqual(wrap_text("Short answer.\n"), "Short answer.\n")
+        self.assertEqual(wrap_text(""), "")
+        self.assertEqual(wrap_text("  Short answer.  "), "  Short answer.  ")
 
     def test_final_label_parser_does_not_read_explanation_or_substrings(self):
         """Check final label parser does not read explanation or substrings."""

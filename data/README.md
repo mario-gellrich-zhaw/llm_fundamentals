@@ -17,9 +17,10 @@ Git ignores the files, so they are never pushed to GitHub.
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
 | `mcdonalds_reviews.csv` | 18,280 | All reviews of the 710 McDonald's locations, 2006–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
+| `silver_reference.csv` | 40 | Prepared sample IDs and silver labels for notebook 03, included in the Moodle zip |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
 | `processed/reviews_sample.csv` | 500 | Anonymized sample of 250 reviews per chain, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Mini_RAG` (not in the zip) |
-| `processed/silver_labels.csv` | up to 50 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
+| `processed/silver_labels.csv` | 40 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 
 All of these are ignored by git; only this README and the empty folders `raw/` and
@@ -69,9 +70,19 @@ The texts are anonymized; Yelp IDs are replaced by short IDs.
 | `date` | Date and time of the review (UTC) |
 | `text` | Review text after local anonymization: names of people, e-mail addresses and phone numbers are replaced by `<REDACTED>` |
 
+### `silver_reference.csv`
+
+Prepared once from existing `gpt-6-luna` reference labels with high reasoning effort.
+Contains only `id` (the sample ID from notebook 01) and `silver` (the sentiment label).
+The 40 cases include 20 reviews per chain, with four per star rating and chain.
+IDs refer to the fixed sample produced by notebook 01; keep its sampling unchanged.
+Notebook 03 loads these labels without generating them again. Keep this file in the
+private course data package, together with the other Yelp-derived data.
+
 ### `processed/silver_labels.csv`
 
-50 reviews from the sample, 5 per chain and star rating (fewer if the model gave no valid label).
+The same 40 reviews, with their locally anonymized texts and prepared labels.
+Notebook 03 joins them by sample ID and saves this file for notebook 05.
 
 | Column | Meaning |
 |---|---|
