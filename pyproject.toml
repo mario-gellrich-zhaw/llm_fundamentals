@@ -11,3 +11,22 @@ dependencies = ["openai>=3.49,<4", "python-dotenv>=1.0", "tqdm>=4.66", "presidio
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+dev = ["black>=25,<27", "pylint>=3.3,<5"]
+
+[tool.black]
+line-length = 80
+target-version = ["py311"]
+
+[tool.pylint.format]
+max-line-length = 80
+max-module-lines = 2000
+
+# Procedural teaching workflows and generated task text are intentionally
+# larger than typical library methods; keep pylint's other checks enabled.
+[tool.pylint.design]
+max-locals = 40
+max-statements = 80
+max-branches = 20
+min-public-methods = 1
