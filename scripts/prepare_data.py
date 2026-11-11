@@ -1,70 +1,135 @@
-"""Rebuild the Yelp subset in data/ from the full Yelp Open Dataset.
+"""Extract the unchanged IKEA and McDonald's subsets from local Yelp Parquet files.
 
-Lecturer only: students obtain the existing subset from Moodle.
+Lecturer only: no downloads or model calls. Keep the output private; students
+obtain the subset from Moodle. Requires pandas and pyarrow.
 
-Input: the two Parquet files of the Yelp Open Dataset (copy on Hugging Face:
-yashraizad/yelp-open-dataset-business, yashraizad/yelp-open-dataset-reviews),
-e.g. saved in data/raw/ (ignored by git).
-
-Output:
-    data/businesses_mcdonalds_ikea.csv   all McDonald's and IKEA locations
-    data/ikea_reviews.csv                all reviews of the IKEA locations
-
-Usage:
     python scripts/prepare_data.py --business data/raw/business.parquet \\
                                    --reviews data/raw/review.parquet
 
-Requires: pandas, pyarrow (pip install pyarrow).
+Business names are matched exactly as specified in the course extraction task.
+Every matching review row is retained, including duplicate texts. Reviews are
+sorted by date without changing their text. Expected counts are checks, never
+extra selection criteria. Differences are reported in subset_validation.json.
 """
-
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import pandas as pd
-import pyarrow.parquet as pq
 
 ROOT = Path(__file__).resolve().parents[1]
+MCDONALDS_PATTERN = r"^McDonald['’]?s(?:['’]s)?$"
+BUSINESS_COLUMNS = ["chain", "business_id", "name", "city", "state", "stars", "review_count"]
+REVIEW_INPUT_COLUMNS = ["review_id", "business_id", "stars", "date", "text"]
+REVIEW_OUTPUT_COLUMNS = ["review_id", "business_id", "store", "city", "state", "stars", "date", "text"]
+EXPECTED_INPUT = {"business_rows": 150_346, "review_rows": 6_990_280}
+EXPECTED = {
+    "IKEA": {
+        "business_records": 8,
+        "states_provinces": 5,
+        "state_codes": ["AB", "FL", "IN", "MO", "PA"],
+        "review_rows": 1_743,
+        "distinct_review_texts": 1_738,
+        "mean_review_stars": 3.26,
+        "reviews_by_stars_1_to_5": [397, 155, 243, 496, 452],
+        "earliest_review_date": "2007-02-23",
+        "latest_review_date": "2022-01-06",
+        "business_review_count_sum": 1_688,
+    },
+    "McDonald's": {
+        "business_records": 710,
+        "states_provinces": 14,
+        "review_rows": 18_280,
+        "distinct_review_texts": 18_245,
+        "mean_review_stars": 1.78,
+        "reviews_by_stars_1_to_5": [12_353, 1_865, 1_317, 1_144, 1_601],
+        "earliest_review_date": "2006-07-19",
+        "latest_review_date": "2022-01-19",
+        "business_review_count_sum": 17_427,
+    },
+}
+
+
+def chain_stats(businesses: pd.DataFrame, reviews: pd.DataFrame) -> dict:
+    """Compute aggregate checks without modifying either source table."""
+    dates = pd.to_datetime(reviews["date"])
+    return {
+        "business_records": len(businesses),
+        "states_provinces": businesses["state"].nunique(),
+        "state_codes": sorted(businesses["state"].dropna().unique().tolist()),
+        "review_rows": len(reviews),
+        "distinct_review_texts": reviews["text"].nunique(),
+        "mean_review_stars": round(float(reviews["stars"].mean()), 2) if len(reviews) else None,
+        "reviews_by_stars_1_to_5": reviews["stars"].value_counts().reindex(range(1, 6), fill_value=0).tolist(),
+        "earliest_review_date": dates.min().strftime("%Y-%m-%d") if len(reviews) else None,
+        "latest_review_date": dates.max().strftime("%Y-%m-%d") if len(reviews) else None,
+        "business_review_count_sum": int(businesses["review_count"].sum()),
+    }
+
+
+def extract_subsets(business_path: Path, review_path: Path, out: Path) -> dict:
+    """Write the three specified CSVs and return the expected/actual checks."""
+    import pyarrow.parquet as pq
+
+    # Read only local files. No source rows or review texts are cleaned.
+    bus = pd.read_parquet(business_path, columns=BUSINESS_COLUMNS[1:])
+    mcd = bus[bus["name"].str.match(MCDONALDS_PATTERN, case=False, na=False)]
+    ikea = bus[bus["name"].str.match(r"^IKEA", case=False, na=False)]
+    selected = pd.concat([mcd.assign(chain="McDonald's"), ikea.assign(chain="IKEA")])
+    info, ids = selected.set_index("business_id"), set(selected["business_id"])
+
+    pf = pq.ParquetFile(review_path)
+    parts = []
+    for group in range(pf.num_row_groups):
+        chunk = pf.read_row_group(group, columns=REVIEW_INPUT_COLUMNS).to_pandas()
+        parts.append(chunk[chunk["business_id"].isin(ids)])
+        print(f"Row group {group + 1}/{pf.num_row_groups} processed", flush=True)
+    reviews = pd.concat(parts, ignore_index=True)
+    for column, source in [("chain", "chain"), ("store", "name"), ("city", "city"), ("state", "state")]:
+        reviews[column] = reviews["business_id"].map(info[source])
+
+    out.mkdir(parents=True, exist_ok=True)
+    selected[BUSINESS_COLUMNS].to_csv(out / "businesses_mcdonalds_ikea.csv", index=False, encoding="utf-8")
+    actual = {}
+    for chain, filename in [("IKEA", "ikea_reviews.csv"), ("McDonald's", "mcdonalds_reviews.csv")]:
+        subset = reviews[reviews["chain"] == chain].sort_values("date")[REVIEW_OUTPUT_COLUMNS]
+        subset.to_csv(out / filename, index=False, encoding="utf-8")
+        actual[chain] = chain_stats(selected[selected["chain"] == chain], subset)
+
+    input_actual = {"business_rows": len(bus), "review_rows": pf.metadata.num_rows}
+    differences = []
+    for scope, expected, observed in [("input", EXPECTED_INPUT, input_actual)] + [
+        (chain, EXPECTED[chain], actual[chain]) for chain in EXPECTED
+    ]:
+        for check, target in expected.items():
+            if observed[check] != target:
+                differences.append({"scope": scope, "check": check, "expected": target, "actual": observed[check]})
+    report = {
+        "input": input_actual,
+        "actual": actual,
+        "expected": EXPECTED,
+        "differences": differences,
+        "all_checks_match": not differences,
+    }
+    (out / "subset_validation.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return report
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--business", type=Path, required=True)
-    p.add_argument("--reviews", type=Path, required=True)
-    p.add_argument("--out", type=Path, default=ROOT / "data")
-    args = p.parse_args()
-
-    args.out.mkdir(parents=True, exist_ok=True)
-
-    # Business records: exact name match for McDonald's, prefix match for IKEA
-    bus = pd.read_parquet(args.business)
-    mcd = bus[bus["name"].str.match(r"^McDonald'?s$", case=False, na=False)]
-    ikea = bus[bus["name"].str.match(r"^IKEA", case=False, na=False)]
-    sel = pd.concat([mcd.assign(chain="McDonald's"), ikea.assign(chain="IKEA")])
-    cols = ["chain", "business_id", "name", "city", "state", "stars", "review_count"]
-    sel[cols].to_csv(args.out / "businesses_mcdonalds_ikea.csv", index=False)
-    print(f"McDonald's locations: {len(mcd)} | IKEA locations: {len(ikea)}")
-
-    # IKEA reviews: read the 3 GB review file one row group at a time
-    ids = set(ikea["business_id"])
-    pf = pq.ParquetFile(args.reviews)
-    parts = []
-    for g in range(pf.num_row_groups):
-        t = pf.read_row_group(
-            g, columns=["review_id", "business_id", "stars", "date", "text"]
-        ).to_pandas()
-        parts.append(t[t["business_id"].isin(ids)])
-    rev = pd.concat(parts, ignore_index=True)
-
-    info = ikea.set_index("business_id")
-    rev["store"] = rev["business_id"].map(info["name"])
-    rev["city"] = rev["business_id"].map(info["city"])
-    rev["state"] = rev["business_id"].map(info["state"])
-    rev["stars"] = rev["stars"].astype(int)
-    cols = ["review_id", "business_id", "store", "city", "state", "stars", "date", "text"]
-    rev[cols].to_csv(args.out / "ikea_reviews.csv", index=False)
-    print(f"IKEA reviews: {len(rev):,}")
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--business", type=Path, required=True)
+    parser.add_argument("--reviews", type=Path, required=True)
+    parser.add_argument("--out", type=Path, default=ROOT / "data")
+    args = parser.parse_args()
+    for path in [args.business, args.reviews]:
+        if not path.is_file():
+            parser.error(f"Local input file missing: {path}. Nothing will be downloaded.")
+    report = extract_subsets(args.business, args.reviews, args.out)
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    if report["differences"]:
+        raise SystemExit("Counts differ from the specification. The selection rules were not adjusted.")
 
 
 if __name__ == "__main__":

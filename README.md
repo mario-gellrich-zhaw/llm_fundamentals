@@ -5,7 +5,7 @@ You will work with a large language model through its API: count tokens and esti
 costs, write and evaluate prompts, build a small retrieval-augmented pipeline (RAG) and
 compare an API model with a local open-weight model.
 
-The five practical exercises use real IKEA reviews from the
+The data-preparation notebook and four LLM exercises use real IKEA and McDonald's reviews from the
 [Yelp Open Dataset](https://yelp.com/dataset). The practice exam uses synthetic data
 and simulated model results, so it needs neither an API key nor the Yelp download.
 
@@ -24,9 +24,9 @@ and simulated model results, so it needs neither an API key nor the Yelp downloa
    PyTorch, the local privacy model and Ollama are installed; later starts are fast.
 5. Add the data from Moodle, see [Data](#data) below.
 6. Run [01_Explore_Yelp_Data/explore_yelp_data.ipynb](01_Explore_Yelp_Data/explore_yelp_data.ipynb)
-   to the end. Its last part creates the anonymized sample of 500 reviews that notebooks
+   to the end. Its last part creates the anonymized sample of 500 reviews (250 per chain) that notebooks
    03–05 use. In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
-   the first code cell should print `API key found: True`.
+   run the first question to check that the API connection works.
 
 ### API key
 
@@ -43,7 +43,7 @@ environment variable `OPENAI_API_KEY`. It is never stored in the repository.
 Depending on how you create the codespace, GitHub may also ask for `OPENAI_API_KEY` on
 the creation page. If the secret is already stored, you can ignore that field.
 
-`API key found: False`?
+An API request fails because the key is missing or invalid?
 
 - Check the secret on <https://github.com/settings/codespaces>: is the name exactly
   `OPENAI_API_KEY`, and is **your fork** in the repository access list?
@@ -88,8 +88,8 @@ Your fork is public, like this repository. Push only your code and notebooks: th
 
 ### Data
 
-The notebooks use a subset of the Yelp Open Dataset: all 716 McDonald's and IKEA
-locations and all 1,743 IKEA reviews. The Yelp terms do not allow publishing the data,
+The notebooks use a subset of the Yelp Open Dataset: all 718 McDonald's and IKEA
+locations, all 1,743 IKEA reviews and all 18,280 McDonald's reviews. The Yelp terms do not allow publishing the data,
 so it is **not in this repository**. You get it on Moodle.
 
 1. Download `llm_fundamentals_data.zip` from Moodle (Week 10).
@@ -101,6 +101,10 @@ so it is **not in this repository**. You get it on Moodle.
 
 The files land in `data/`. Git ignores them, so they never end up on GitHub, even if you
 commit and push your work. [data/README.md](data/README.md) describes every column.
+
+Updating an existing course copy? Use the updated Moodle zip containing
+`mcdonalds_reviews.csv`, then rerun notebooks 01 and 03 in full. This regenerates the
+anonymized sample and silver labels with both chains for notebooks 04 and 05.
 
 Rules for the data:
 
@@ -134,7 +138,7 @@ The optional Ollama cells require a Linux/macOS shell; the supplied Codespace is
 Reviews can contain names and other personal details. **No personal data may be sent to
 an external API.** The course handles this in two steps:
 
-1. **Notebook 01 prepares a sample.** Its last part draws a random sample of 500 reviews,
+1. **Notebook 01 prepares a sample.** Its last part draws a random sample of 500 reviews (250 per chain),
    removes personal details with `anonymize()` and saves the result as
    `data/processed/reviews_sample.csv`. You compare texts before and after and can correct
    them by hand. `anonymize()` runs in your codespace (libraries Presidio and spaCy) and
@@ -159,11 +163,11 @@ the outputs before you share a notebook.
 
 | Folder | Notebook | What you do | Time | First run |
 |---|---|---|---|---|
-| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, inspect review bias, read three examples and prepare an anonymized sample of 500 reviews | 10–15 min, plus self-check | under 1 min |
-| `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compute the cost of reading all reviews, see what reasoning costs | 10 min, together | under 1 min |
-| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 50 reviews, compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
-| `04_Mini_RAG` | `mini_rag.ipynb` | Search 500 reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
-| `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews | 15 min, at home | about 2 min + model download |
+| `01_Explore_Yelp_Data` | `explore_yelp_data.ipynb` | Compare chain ratings, compare both review distributions, inspect examples and prepare an anonymized sample of 250 reviews per chain | 10–15 min, plus self-check | under 1 min |
+| `02_Chat_Loop_Tokens` | `chat_loop_tokens.ipynb` | See why the API forgets, keep a message history, count tokens, compare the cost of reading both complete review datasets, see what reasoning costs | 10 min, together | under 1 min |
+| `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 50 reviews (25 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
+| `04_Mini_RAG` | `mini_rag.ipynb` | Search 250 McDonald's reviews by keywords (BM25) and by meaning (E5), let the model answer with sources, check one answer and examine one misleading source | 20 min, plus self-check | about 2 min |
+| `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
 | `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
 | `06_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
 
@@ -173,7 +177,7 @@ because answers of the model are saved in `.cache/`.
 **How the notebooks keep it simple and fast**
 
 - Every step starts with **one example** (one review, one request) before it is applied to many.
-- The API notebooks use **small samples**: 500 anonymized reviews in total, 50 for
+- The API notebooks use **small samples**: 500 anonymized reviews in total (250 per chain), 50 for
   classification, 10 for the model comparison.
 - Normal requests use **low reasoning effort**; only the silver labels use high effort.
   The local model answers without thinking by default.
@@ -206,6 +210,7 @@ llm_fundamentals/
 │   ├── README.md
 │   ├── businesses_mcdonalds_ikea.csv   (from Moodle)
 │   ├── ikea_reviews.csv                (from Moodle)
+│   ├── mcdonalds_reviews.csv            (from Moodle)
 │   ├── fewshot_examples.json           (from Moodle)
 │   ├── raw/                  Full Yelp files (not in git)
 │   └── processed/            Files the notebooks write (not in git)
@@ -245,21 +250,22 @@ llm_fundamentals/
 | File | Purpose |
 |---|---|
 | `01_Explore_Yelp_Data/explore_yelp_data.ipynb` | Unzips the data from Moodle into `data/`. Exploratory analysis with pandas and matplotlib: ratings of both chains, weighted vs. unweighted averages, review star distribution and sampling bias, three example texts, and a simple topic search. The last part draws a random sample of 500 unique reviews, anonymizes it locally, shows texts before and after, and saves `data/processed/reviews_sample.csv`. No API calls. |
-| `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
-| `03_Classify_Reviews/classify_reviews.ipynb` | Four short steps on 50 reviews (10 per star rating): free text vs. JSON schema; two predefined prompts with silver labels and separate few-shot examples; accuracy, five runs on five reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
-| `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over the 500 sample reviews, combined by a provided rank-fusion helper. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
+| `02_Chat_Loop_Tokens/chat_loop_tokens.ipynb` | Follow-up question without and with a message history, the same prompt three times, tokens with `tiktoken`, cost of reading all IKEA and McDonald's reviews, context window, usage reported by the API, low vs. high reasoning effort. 10 small API calls; usage and low/high reasoning are compared in one experiment. |
+| `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 50 reviews (5 per chain and star rating): free text vs. JSON schema; two predefined prompts with silver labels and separate few-shot examples; accuracy, five runs on five reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
+| `04_Mini_RAG/mini_rag.ipynb` | Keyword search (BM25) and search by meaning (E5) over 250 McDonald's sample reviews (switchable to IKEA), combined step by step with rank fusion. Runs one complete RAG question, checks its citations and claims, then uses one made-up source to distinguish faithfulness from truth. Two generation calls in total. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. |
 
 ### `data/`: Yelp subset
 
-Only `README.md` and the two empty folders are in git. The three data files come from
+Only `README.md` and the empty folder placeholders are in git. The data files come from
 Moodle (see [Data](#data)).
 
 | File | Purpose |
 |---|---|
 | `README.md` | Description of every data file and column, how the subset was selected, and how to rebuild it. |
-| `businesses_mcdonalds_ikea.csv` | From Moodle. All 716 McDonald's and IKEA locations from the Yelp business file, with average rating and number of reviews. |
+| `businesses_mcdonalds_ikea.csv` | From Moodle. All 718 McDonald's and IKEA locations from the Yelp business file, with average rating and number of reviews. |
 | `ikea_reviews.csv` | From Moodle. All 1,743 reviews of the 8 IKEA locations, with stars, date and full text. |
+| `mcdonalds_reviews.csv` | From Moodle. All 18,280 reviews of the 710 McDonald's locations, with stars, date and full text. |
 | `fewshot_examples.json` | From Moodle. Three labelled reviews used as few-shot examples in `03_Classify_Reviews` (labels by us). They are not part of any test set. |
 | `raw/` | Place for the full Yelp files, only needed to rebuild the subset. Ignored by git. |
 | `processed/` | Files the notebooks write: the anonymized sample from notebook 01 and the silver labels from notebook 03. Ignored by git. |
@@ -268,7 +274,7 @@ Moodle (see [Data](#data)).
 
 | File | Purpose |
 |---|---|
-| `prepare_data.py` | Rebuilds the two CSV files in `data/` from the full Yelp Parquet files (3 GB). Only needed if the subset should be recreated. |
+| `prepare_data.py` | Rebuilds the three CSV files in `data/` from the full Yelp Parquet files (3 GB). Only needed if the subset should be recreated. |
 | `reproduce_slide_numbers.py` | Recomputes the dated, input-only slide estimates from the original local data. |
 | `make_ap01_data.py` | Regenerates the synthetic exam CSVs with a fixed random seed; no model calls. |
 | `build_ap01_notebooks.py` | Builds both exam versions and the concept checks; executes only the offline synthetic solution. |
@@ -357,7 +363,7 @@ Files created while you work, all ignored by git:
 |---|---|
 | `.cache/llm-v2/` | Completed answers to sanitized requests and empty coordination lock files. Removing cached answers causes new paid requests. |
 | `data/processed/reviews_sample.csv` | Anonymized sample of 500 reviews from notebook 01, used in notebooks 03 and 04. |
-| `data/processed/silver_labels.csv` | 100 reviews with silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
+| `data/processed/silver_labels.csv` | Up to 50 reviews with silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
 
 ## Licence
 

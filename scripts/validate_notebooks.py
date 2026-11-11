@@ -1,6 +1,7 @@
 """Exercise the five practical notebooks locally with fake API/embedding/Ollama clients.
 
-No paid requests, model downloads or shell setup. Real local anonymization runs.
+No paid requests, tokenizer/model downloads or shell setup. Real local anonymization runs.
+Token counting uses character tokens for wiring checks, not real token/cost estimates.
 This verifies notebook wiring, not hosted-model quality or actual E5/Ollama speed.
 Run after installing requirements and en_core_web_sm: python scripts/validate_notebooks.py
 """
@@ -11,6 +12,7 @@ import io
 import json
 from pathlib import Path
 import socket
+import shutil
 import sys
 import tempfile
 from types import ModuleType, SimpleNamespace
@@ -30,6 +32,8 @@ class Tokenizer:
     """Character tokens: deterministic, no model files or network."""
     def encode(self, text, add_special_tokens=False):
         return list(text) + ([0, 1] if add_special_tokens else [])
+    def decode(self, tokens):
+        return ''.join(tokens)
     def num_special_tokens_to_add(self, pair=False):
         return 2
     def __call__(self, text, **kwargs):
@@ -88,14 +92,13 @@ def main():
         data = Path(tmp) / 'data'
         data.mkdir()
         (data / 'processed').mkdir()
-        with zipfile.ZipFile(archive) as z:
-            for filename in ('ikea_reviews.csv', 'businesses_mcdonalds_ikea.csv', 'fewshot_examples.json'):
-                (data / filename).write_bytes(z.read(filename))
+        shutil.copyfile(archive, data / archive.name)
         stack.enter_context(patch.object(llm_course, 'DATA', data))
         stack.enter_context(patch.object(client, 'CACHE_DIR', Path(tmp) / 'cache'))
         stack.enter_context(patch.object(client, 'get_client', return_value=fake_api))
         stack.enter_context(patch('openai.OpenAI', return_value=fake_local))
         stack.enter_context(patch.dict(sys.modules, {'sentence_transformers':fake_module}))
+        stack.enter_context(patch('tiktoken.get_encoding', return_value=Tokenizer()))
         stack.enter_context(patch.object(socket.socket, 'connect', side_effect=AssertionError('Network disabled in offline validation')))
         for folder in sorted(ROOT.glob('0[1-5]_*')):
             path = next(folder.glob('*.ipynb'))
@@ -117,13 +120,19 @@ def main():
             if folder.name.startswith('01_'):
                 saved = (data / 'processed/reviews_sample.csv').read_text()
                 assert len(namespace['sample']) == 500 and 'original' not in saved.splitlines()[0]
+                assert namespace['sample'].groupby('chain').size().to_dict() == {'IKEA': 250, "McDonald's": 250}
                 # Notebook 01 must preserve the source download byte-for-byte.
                 with zipfile.ZipFile(archive) as source_zip:
-                    for filename in ('ikea_reviews.csv', 'fewshot_examples.json'):
+                    for filename in ('ikea_reviews.csv', 'mcdonalds_reviews.csv', 'fewshot_examples.json'):
                         assert (data / filename).read_bytes() == source_zip.read(filename)
             if folder.name.startswith('03_'):
                 assert not set(namespace['test'].text) & {ex['text'] for ex in namespace['fewshot']}
                 assert (data / 'processed/silver_labels.csv').exists()
+                assert namespace['test'].groupby('chain').size().to_dict() == {'IKEA': 25, "McDonald's": 25}
+            if folder.name.startswith('04_'):
+                assert set(namespace['df']['chain']) == {"McDonald's"}
+            if folder.name.startswith('05_'):
+                assert namespace['test'].groupby('chain').size().to_dict() == {'IKEA': 5, "McDonald's": 5}
             print(f'PASS {path.relative_to(ROOT)} ({count} Python cells; fake clients)', flush=True)
     print('No paid calls, remote inference, downloads or original-data changes.')
 

@@ -156,7 +156,7 @@ class NotebookTests(unittest.TestCase):
             self.assertNotIn('John Smith', saved)
             self.assertNotIn('original', saved)
 
-    def test_api_notebooks_explain_which_notebook_to_run_first(self):
+    def test_api_notebooks_never_fall_back_to_raw_reviews(self):
         cases = [('03_Classify_Reviews/classify_reviews.ipynb', 'sample_path = ', 'notebook 01'),
                  ('04_Mini_RAG/mini_rag.ipynb', 'sample_path = ', 'notebook 01'),
                  ('05_Local_Model/local_model.ipynb', 'silver_path = ', 'notebook 03')]
@@ -164,19 +164,20 @@ class NotebookTests(unittest.TestCase):
             # A raw file must never be used as an automatic fallback.
             (Path(tmp) / 'ikea_reviews.csv').write_text('review_id,text\nraw-id,raw personal information\n')
             for notebook, marker, hint in cases:
-                with self.subTest(notebook=notebook), self.assertRaisesRegex(AssertionError, hint):
+                with self.subTest(notebook=notebook), self.assertRaises(FileNotFoundError):
                     exec(code_cell(notebook, marker), {'DATA': Path(tmp), 'pd': pd})
 
     def test_notebook_04_retrieve_combines_keyword_and_meaning_ranks(self):
         import numpy as np
-        source = code_cell('04_Mini_RAG/mini_rag.ipynb', 'def retrieve(').split('# Our three questions')[0]
-        ns = {'pd': pd, 'tokenize': str.split,
+        source = code_cell('04_Mini_RAG/mini_rag.ipynb', '# Hybrid search for one question')
+        import re
+        ns = {'pd': pd, 're': re,
               'df': pd.DataFrame({'id': ['R001', 'R002', 'R003'], 'stars': [1, 2, 3], 'text': ['a', 'b', 'c']}),
               'bm25': SimpleNamespace(get_scores=lambda query: [3., 2., 1.]),        # ranks 1, 2, 3
               'embeddings': np.array([[.1], [.9], [.5]]),                            # ranks 3, 1, 2
               'model': SimpleNamespace(encode=lambda text, **kw: np.array([1.]))}
         exec(source, ns)
-        self.assertEqual(ns['retrieve']('question', k=2)['id'].tolist(), ['R002', 'R001'])
+        self.assertEqual(ns['hits']['id'].head(2).tolist(), ['R002', 'R001'])
 
     def test_notebook_05_cost_uses_input_and_output_tokens_without_cache(self):
         cell = code_cell('05_Local_Model/local_model.ipynb', '# API model: the same reviews')

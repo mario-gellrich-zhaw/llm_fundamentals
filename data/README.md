@@ -1,7 +1,7 @@
 # Data
 
 All notebooks use a small subset of the [Yelp Open Dataset](https://yelp.com/dataset):
-the McDonald's and IKEA locations and all reviews of the IKEA locations.
+the McDonald's and IKEA locations and all reviews of both chains.
 
 **The data files are not in this repository.** The Yelp terms do not allow publishing
 the data. Download `llm_fundamentals_data.zip` from Moodle and put it into this folder;
@@ -13,12 +13,13 @@ Git ignores the files, so they are never pushed to GitHub.
 
 | File | Rows | Content |
 |---|---|---|
-| `businesses_mcdonalds_ikea.csv` | 716 | One row per location: 708 McDonald's, 8 IKEA (6 stores and 2 store restaurants) |
+| `businesses_mcdonalds_ikea.csv` | 718 | One row per location: 710 McDonald's, 8 IKEA (6 stores and 2 store restaurants) |
 | `ikea_reviews.csv` | 1,743 | All reviews of the 8 IKEA locations, 2007–2022 |
+| `mcdonalds_reviews.csv` | 18,280 | All reviews of the 710 McDonald's locations, 2006–2022 |
 | `fewshot_examples.json` | 3 | Labelled IKEA reviews used as few-shot examples in `03_Classify_Reviews` (labels by us) |
 | `TERMS_OF_USE.txt` | – | Short note on the terms of use, included in the Moodle zip |
-| `processed/reviews_sample.csv` | 500 | Anonymized random sample, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Mini_RAG` (not in the zip) |
-| `processed/silver_labels.csv` | up to 100 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
+| `processed/reviews_sample.csv` | 500 | Anonymized sample of 250 reviews per chain, written by `01_Explore_Yelp_Data`, read by `03_Classify_Reviews` and `04_Mini_RAG` (not in the zip) |
+| `processed/silver_labels.csv` | up to 50 | Written by `03_Classify_Reviews`, read by `05_Local_Model` (not in the zip) |
 | `raw/` | – | Place for the full Yelp files, only needed to rebuild the subset |
 
 All of these are ignored by git; only this README and the empty folders `raw/` and
@@ -35,7 +36,7 @@ All of these are ignored by git; only this README and the empty folders `raw/` a
 | `stars` | Average rating of the location, rounded to 0.5 |
 | `review_count` | Number of reviews according to the business file |
 
-### `ikea_reviews.csv`
+### `ikea_reviews.csv` and `mcdonalds_reviews.csv`
 
 | Column | Meaning |
 |---|---|
@@ -46,8 +47,7 @@ All of these are ignored by git; only this README and the empty folders `raw/` a
 | `date` | Date and time of the review (UTC) |
 | `text` | Full review text, original spelling |
 
-4 review texts appear more than once (9 rows); `01_Explore_Yelp_Data` keeps each text
-once when it draws the sample.
+The original CSVs retain all repeated texts: IKEA has 1,738 distinct texts and McDonald's has 18,245. `01_Explore_Yelp_Data` keeps each text once when it draws the teaching sample; it does not modify these source CSVs.
 
 ### `fewshot_examples.json`
 
@@ -57,12 +57,13 @@ A list of 3 examples, each with `text` (review), `yelp_stars`, `sentiment` (our 
 
 ### `processed/reviews_sample.csv`
 
-A random sample of 500 unique reviews (fixed seed, without the three few-shot examples).
+A random sample of 500 unique reviews: 250 per chain (fixed seed, without the three few-shot examples). Equal chain sizes support teaching comparisons; they do not preserve the original dataset proportions.
 The texts are anonymized; Yelp IDs are replaced by short IDs.
 
 | Column | Meaning |
 |---|---|
 | `id` | Short ID of the review in the sample, `R001` to `R500` |
+| `chain` | `IKEA` or `McDonald's` |
 | `store`, `city` | Location of the review |
 | `stars` | Rating of the review, 1–5 |
 | `date` | Date and time of the review (UTC) |
@@ -70,23 +71,23 @@ The texts are anonymized; Yelp IDs are replaced by short IDs.
 
 ### `processed/silver_labels.csv`
 
-100 reviews from the sample, 20 per star rating (fewer if the model gave no valid label).
+50 reviews from the sample, 5 per chain and star rating (fewer if the model gave no valid label).
 
 | Column | Meaning |
 |---|---|
 | `id` | Short ID of the review in the sample |
+| `chain` | `IKEA` or `McDonald's` |
 | `stars` | Rating of the review, 1–5 |
 | `text` | Anonymized review text |
 | `silver` | Silver label from `gpt-6-luna` with high reasoning effort: `positive`, `negative` or `mixed` |
 
 ## How the subset was selected
 
-- McDonald's: business name exactly `McDonald's` or `McDonalds` (case-insensitive).
+- McDonald's: business name fully matches `^McDonald['’]?s(?:['’]s)?$` (case-insensitive), including the four apostrophe variants in the dataset.
 - IKEA: business name starts with `IKEA`.
-- Reviews: all reviews in the review file whose `business_id` is one of the IKEA locations.
+- Reviews: all reviews in the review file whose `business_id` is one of the selected locations. No additional filters, deduplication or text changes.
 
-The `review_count` in the business file (1,688 for IKEA) is not the same as the number of
-rows in the review file (1,743).
+The business-file `review_count` sums (IKEA: 1,688; McDonald's: 17,427) differ from the review-file row counts (1,743 and 18,280). This is expected. The lecture uses review-file counts.
 
 To recompute the numbers shown in the lecture from the files in `data/`:
 
@@ -102,6 +103,10 @@ save the two files in `data/raw/` and run:
 pip install pyarrow
 python scripts/prepare_data.py --business data/raw/business.parquet --reviews data/raw/review.parquet
 ```
+
+The script validates the source row counts and all expected subset statistics in
+`subset_validation.json`. It reports differences without changing the selection.
+It never downloads source files.
 
 ## Licence
 
