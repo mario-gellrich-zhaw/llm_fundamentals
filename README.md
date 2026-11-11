@@ -314,19 +314,41 @@ check cover generation, hallucination, annotation agreement, RAG faithfulness, a
 deployment choices and the course's data-handling rules. Optional extensions in the
 practical notebooks are outside their original time budgets.
 
-Rebuild the synthetic data and notebooks from the repository root:
+Rebuild the synthetic data and notebooks from the repository root (notebook
+generation uses Black from the optional development tools):
 
 ```bash
+python -m pip install -e '.[dev]'
 python scripts/make_ap01_data.py
 python scripts/build_ap01_notebooks.py
 ```
 
-The builder executes only the synthetic solution notebook, with no model calls. Editing
+The builder executes only the synthetic solution notebook, with no model calls.
+Shared assumptions in `scripts/exam_settings.py` give both models 185 prompt tokens
+per review. Simulated output totals include reasoning tokens for both models.
+`scripts/exam_metrics.py` derives the numbers in tasks and solutions from the CSVs.
+The unused `llm_answers.csv` is no longer generated. Cell IDs are deterministic,
+and the footer omits timestamps so repeated builds do not create artificial diffs. Editing
 the builder updates both exam versions together. To run offline regression checks:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+Formatting uses an 80-character line limit. Install the optional development tools
+and run the checks from the repository root:
+
+```bash
+python -m pip install -e '.[dev]'
+python -m black --check src scripts tests
+python scripts/lint_code.py
+```
+
+The pylint check includes all Python modules and temporary exports of the notebook
+code cells. Notebook-specific exceptions cover displayed expressions, exercise
+TODOs, shared variable names and imports spread across cells. Code is checked
+without executing model requests or exporting notebook outputs.
+
 
 API prices and mutable model aliases can change. For reproducible experiments, record
 model/snapshot, prompt, reasoning settings, detector/model versions, evaluation data,

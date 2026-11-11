@@ -4,6 +4,7 @@ Run from the repository root: python scripts/lint_code.py
 Notebook exports are temporary and never include outputs or review data.
 """
 
+import ast
 import json
 import re
 import subprocess
@@ -27,12 +28,45 @@ def export_notebook(path, destination):
         "# pylint: disable=reimported,duplicate-code",
         "",
     ]
+    placeholders = set()
     for index, cell in enumerate(notebook["cells"]):
         if cell["cell_type"] != "code":
             continue
         lines.append(f"# Notebook cell {index}")
         source = "".join(cell["source"])
-        for line in source.splitlines():
+        pending_members = set()
+        if not any(
+            line.lstrip().startswith(("!", "%")) for line in source.splitlines()
+        ):
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Assign)
+                    and isinstance(node.value, ast.Constant)
+                    and node.value.value is Ellipsis
+                ):
+                    placeholders.update(
+                        target.id
+                        for target in node.targets
+                        if isinstance(target, ast.Name)
+                    )
+            pending_members = {
+                node.lineno
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in placeholders
+            }
+        for number, line in enumerate(source.splitlines(), 1):
+            # A learner's Ellipsis has no runtime members until completed.
+            if number in pending_members:
+                indent = line[: len(line) - len(line.lstrip())]
+                lines.append(indent + "# pylint: disable-next=no-member")
+            if path.stem.endswith("_Aufgaben") and line.startswith(
+                "from sklearn.metrics import"
+            ):
+                # accuracy_score is used by the intended C3 completion.
+                lines.append("# pylint: disable-next=unused-import")
             if line.lstrip().startswith(("!", "%")):
                 # Shell/model setup is intentionally not Python code.
                 lines.append("# " + line)

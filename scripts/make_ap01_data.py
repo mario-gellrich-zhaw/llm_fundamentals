@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tiktoken
+from exam_settings import PROMPT_TOKENS
 
 OUT = Path(__file__).resolve().parents[1] / "06_Example_Exam_Questions"
 rng = np.random.default_rng(2026)
@@ -248,9 +249,9 @@ def make_review(gold, store):
         pos, topics = sentences("positive", 1)
         neg, _ = sentences("negative", 1, exclude=topics)
 
-        def lower(text):
+        def lower(sentence):
             """Lowercase the first character of a sentence."""
-            return text[0].lower() + text[1:]
+            return sentence[0].lower() + sentence[1:]
 
         if rng.random() < 0.5:
             body = [pos[0], "However, " + lower(neg[0])]
@@ -383,70 +384,6 @@ for i, r in df.iterrows():
     ]
 df_runs = pd.DataFrame(run_rows)
 
-# Free-text answers (one run): the answer ends with 'Overall: <label>.'
-ANSWERS = {
-    "positive": [
-        (
-            (
-                "The customer sounds positive and "
-                "satisfied with the visit. Overall: "
-                "positive."
-            )
-        ),
-        "Nothing negative here; the customer is happy. Overall: positive.",
-        (
-            (
-                "The customer praises the store and "
-                "would come back. Overall: "
-                "positive."
-            )
-        ),
-    ],
-    "negative": [
-        (
-            (
-                "The customer is not positive about the "
-                "visit and complains. Overall: "
-                "negative."
-            )
-        ),
-        (
-            (
-                "Clearly negative: the customer "
-                "describes several problems. Overall: "
-                "negative."
-            )
-        ),
-        "There is nothing positive in this review. Overall: negative.",
-        "The customer is frustrated and disappointed. Overall: negative.",
-    ],
-    "mixed": [
-        (
-            (
-                "The review has positive points but also "
-                "negative ones. Overall: "
-                "mixed."
-            )
-        ),
-        "Some praise and some criticism. Overall: mixed.",
-        "Positive about one aspect, negative about another. Overall: mixed.",
-    ],
-}
-answer_rows = []
-for i, r in df.iterrows():
-    if r["kind"] == "injection":
-        prediction = "positive"
-    else:
-        prediction = (
-            r["gold_label"]
-            if rng.random() < p_correct(r, 0.94, 0.75, 0.35)
-            else alt_label(r)
-        )
-    answer_rows.append(
-        {"review_id": r["review_id"], "answer": pick(ANSWERS[prediction])}
-    )
-df_answers = pd.DataFrame(answer_rows)
-
 # Local vs. API model on 60 reviews
 sample = df.sample(60, random_state=7)
 first_run = df_runs[df_runs["run"] == 1].set_index("review_id")["label"]
@@ -458,7 +395,7 @@ for _, r in sample.iterrows():
             "review_id": r["review_id"],
             "label": first_run[r["review_id"]],
             "seconds": round(float(np.clip(rng.normal(1.2, 0.35), 0.5, 3)), 2),
-            "input_tokens": int(r["n_tokens"] + 12),
+            "input_tokens": int(r["n_tokens"] + PROMPT_TOKENS),
             "output_tokens": int(np.clip(rng.normal(70, 25), 5, 200)),
         }
     )
@@ -473,7 +410,7 @@ for _, r in sample.iterrows():
             "review_id": r["review_id"],
             "label": r["gold_label"] if rng.random() < p else alt_label(r),
             "seconds": round(float(np.clip(rng.normal(7.5, 2.0), 3, 15)), 2),
-            "input_tokens": int(r["n_tokens"] + 14),
+            "input_tokens": int(r["n_tokens"] + PROMPT_TOKENS),
             "output_tokens": int(np.clip(rng.normal(180, 60), 20, 500)),
         }
     )
@@ -484,7 +421,6 @@ df[
     ["review_id", "store", "date", "stars", "text", "n_tokens", "gold_label"]
 ].to_csv(OUT / "reviews.csv", index=False)
 df_runs.to_csv(OUT / "llm_runs.csv", index=False)
-df_answers.to_csv(OUT / "llm_answers.csv", index=False)
 df_models.to_csv(OUT / "model_comparison.csv", index=False)
 print("Written to", OUT)
 print(
