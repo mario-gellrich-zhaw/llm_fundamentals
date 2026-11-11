@@ -185,7 +185,8 @@ DATA_NOTES = render(
         "Jeder Aufruf enthält $prompt_tokens Prompt-Tokens plus die "
         "Review-Tokens; die Output-Tokens umfassen das sichtbare JSON-Label "
         "und simulierte Reasoning-Tokens. Für beide Modelle ist hier "
-        "Reasoning eingeschaltet. |\n"
+        "Reasoning eingeschaltet (anders als in der Übung, in der das lokale "
+        "Modell ohne Reasoning antwortet). |\n"
         "\n"
         "**Accuracy:** Anteil der Reviews, deren vorhergesagtes Label mit dem "
         "Referenzlabel übereinstimmt.\n"
@@ -1233,8 +1234,10 @@ CONCEPT_CHECKS = [
         "Modell soll eine Frage nur anhand dieses Reviews beantworten. Es "
         "gibt die Behauptung wieder und zitiert den Review korrekt. Ist die "
         "Aussage der Antwort damit wahr? Begründen Sie.",
-        "Nein. Die Antwort ist **faithful**: Sie gibt die Quelle richtig "
-        "wieder. Die Quelle selbst kann aber falsch sein. Reviews sind "
+        "Nein. Die Antwort gibt die Quelle richtig wieder (sie ist "
+        "quellentreu, englisch *faithful*). Ein korrektes Zitat belegt aber "
+        "nur, was im Review steht, nicht, ob es stimmt: Die Quelle selbst "
+        "kann falsch sein. Reviews sind "
         "persönliche Berichte und keine verlässliche Quelle für Fakten; "
         "dafür braucht es z.B. die offizielle Produktinformation.",
     ),
