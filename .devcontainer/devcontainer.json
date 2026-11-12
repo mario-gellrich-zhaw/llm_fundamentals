@@ -32,6 +32,10 @@
                 // Wrap long printed lines (model answers, review texts)
                 "notebook.output.wordWrap": true,
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
+                // Open the README directly as rendered preview
+                "workbench.editorAssociations": {
+                    "README.md": "vscode.markdown.preview.editor"
+                },
                 "files.exclude": {
                     "**/__pycache__": true,
                     "**/*.egg-info": true
@@ -40,8 +44,7 @@
         },
         "codespaces": {
             "openFiles": [
-                "README.md",
-                "01_Explore_Yelp_Data/explore_yelp_data.ipynb"
+                "README.md"
             ]
         }
     },
