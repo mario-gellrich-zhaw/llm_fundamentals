@@ -3,11 +3,14 @@
 Exercises for **Week 10 of the module «Data Science»** (MSc, ZHAW School of Management and Law).
 You will work with a large language model through its API: count tokens and estimate
 costs, write and evaluate prompts, extract structured information from review texts and
-compare an API model with a local open-weight model.
+compare an API model with a local open-weight model. An optional exercise trains
+a small language model from scratch.
 
 The data-preparation notebook and four LLM exercises use real IKEA and McDonald's reviews from the
-[Yelp Open Dataset](https://yelp.com/dataset). The practice exam uses synthetic data
-and simulated model results, so it needs neither an API key nor the Yelp download.
+[Yelp Open Dataset](https://yelp.com/dataset). Notebook 06 trains locally on English
+Grimm tales downloaded from Project Gutenberg. The practice exam in folder 07 uses
+synthetic data and simulated model results. Neither 06 nor 07 needs an API key or
+the Yelp download.
 
 ## Getting started
 
@@ -27,6 +30,9 @@ and simulated model results, so it needs neither an API key nor the Yelp downloa
    to the end. Its last part creates the anonymized sample of 500 reviews (250 per chain) that notebooks
    03–05 use. In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
    run the first question to check that the API connection works.
+7. Optional: open [06_Train_Language_Model/train_language_model.ipynb](06_Train_Language_Model/train_language_model.ipynb)
+   to train your own small model. Use folder `07_Example_Exam_Questions` for the
+   practice exam and concept checks.
 
 ### API key
 
@@ -86,7 +92,7 @@ Your fork is public, like this repository. Push only your code and notebooks: th
 
 ### Data
 
-The notebooks use a subset of the Yelp Open Dataset: all 718 McDonald's and IKEA
+Notebooks 01–05 use a subset of the Yelp Open Dataset: all 718 McDonald's and IKEA
 locations, all 1,743 IKEA reviews and all 18,280 McDonald's reviews. The Yelp terms do not allow publishing the data,
 so it is **not in this repository**. You get it on Moodle.
 
@@ -103,6 +109,9 @@ commit and push your work. [data/README.md](data/README.md) describes every colu
 Updating an existing course copy? Use the updated Moodle zip containing
 `mcdonalds_reviews.csv`, then rerun notebooks 01 and 03 in full. This regenerates the
 anonymized sample and silver labels with both chains for notebooks 04 and 05.
+
+Notebook 06 downloads its own book data on the first run and stores it in
+`data/book_model/`. Folder 07 already includes its synthetic exam CSVs.
 
 Rules for the data:
 
@@ -126,8 +135,8 @@ cp -n .env.example .env
 Enter your key in `.env`, then select this environment as the notebook's Python kernel.
 Codespaces runs the package and privacy-model installation automatically; rebuild an
 existing Codespace or run the installation commands after updating the course.
-Exercise notebooks read the data from `../data`, so run them from their own folder (the
-default in VS Code). The exam setup works from its own folder or from the repository root.
+Notebooks 01–05 read data from `../data`, so run them from their own folder (the
+default in VS Code). Notebook 06 and the exam setup also work from the repository root.
 The optional Ollama cells require a Linux/macOS shell; the supplied Codespace is Linux.
 
 ### Anonymization before the API
@@ -186,25 +195,31 @@ the API take about as long on every run, because answers are not saved.
 the sample created in 01, and `05_Local_Model` uses the prepared silver labels saved in
 `03_Classify_Reviews`.
 
-## Folder structure
+### 06: Train your own language model
 
-Optional extension: [06 — Train a language model from scratch](06_Train_Language_Model/train_language_model.ipynb)
-is a standalone teaching notebook in English. It downloads the English
-[*Grimms' Fairy Tales*](https://www.gutenberg.org/ebooks/2591)
-from Project Gutenberg, holds out every tenth complete tale for validation,
-and trains a tiny causal Transformer with random initial weights on established
-`tiktoken` word-part tokens (`cl100k_base`), using a compact model vocabulary built
-only from the training tales. Compare generated text before and after training,
-inspect training and validation loss, and save/reload your own model. This is a
-small language model, not a capable chatbot. No API key, Yelp data, pretrained
-weights or GPU are needed. PyTorch is included in the root `requirements.txt`;
-no separate installation is needed after the normal course setup.
-Runtime depends on the CPU; the notebook reports elapsed time.
-Early stopping restores the checkpoint with the lowest validation loss;
-training ends after three checks without improvement or 600 updates.
-The downloaded book and generated checkpoint stay in `data/book_model/`, outside
-Git. The first run needs internet access for the book and tokenizer data; later runs
-reuse cached files.
+[Notebook 06](06_Train_Language_Model/train_language_model.ipynb) trains a tiny causal
+Transformer from random weights on [*Grimms' Fairy Tales*](https://www.gutenberg.org/ebooks/2591).
+It uses 56 complete tales for training, including *Hansel and Gretel*, and holds
+out 6 tales for validation. The established `tiktoken` tokenizer (`cl100k_base`)
+provides word-part tokens; only training token IDs enter the compact model
+vocabulary. Unseen validation tokens become `<UNK>` and are counted explicitly.
+
+Training checks validation loss every 50 updates, stops after 3 checks without
+improvement or 600 updates, and restores the best weights. Compare formatted text
+before and after training, inspect learning curves, and save/reload the model.
+This demonstrates language-model training; it is too small for reliable answers.
+
+PyTorch is included in the normal installation. No API key, Yelp data, pretrained
+model weights or GPU are needed. The first run downloads the collection and
+tokenizer data; later runs reuse cached files. A full run took about 3 minutes on
+the course CPU setup; actual runtime is printed by the notebook.
+
+The download is `data/book_model/grimm_gutenberg_2591.txt`; training texts and token
+IDs stay in memory. The best model is saved as `data/book_model/tiny_grimm.pt`,
+including tokenizer mapping, configuration, tale split and best-step metadata.
+Both files are ignored by Git.
+
+## Folder structure
 
 ```
 llm_fundamentals/
@@ -223,14 +238,16 @@ llm_fundamentals/
 ├── 05_Local_Model/
 │   └── local_model.ipynb
 ├── 06_Train_Language_Model/  Optional: train a tiny Transformer on a public book
+│   └── train_language_model.ipynb
 ├── 07_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
 ├── tests/                    Offline checks: notebook cells and the practice exam
-├── data/                     Yelp subset (from Moodle, not in git)
+├── data/                     Private Yelp data and downloaded book/model files
 │   ├── README.md
 │   ├── businesses_mcdonalds_ikea.csv   (from Moodle)
 │   ├── ikea_reviews.csv                (from Moodle)
 │   ├── mcdonalds_reviews.csv            (from Moodle)
 │   ├── fewshot_examples.json           (from Moodle)
+│   ├── book_model/           Book download and model from notebook 06 (not in git)
 │   ├── raw/                  Full Yelp files (not in git)
 │   └── processed/            Files the notebooks write (not in git)
 ├── scripts/                  Data preparation and checks (for the lecturer)
@@ -267,11 +284,12 @@ llm_fundamentals/
 | `03_Classify_Reviews/classify_reviews.ipynb` | Four procedural steps with simple loops on 20 reviews (10 per chain; two per star rating and chain): free text vs. JSON schema; two predefined prompts with prepared silver labels from the Moodle data zip and separate few-shot examples; accuracy, three runs on three reviews and inspection of hard cases; one made-up negative review with two injections, with and without a defence. No meta-prompting workflow or advanced schema code. Development/test separation is explained for subsequent prompt tuning. Saves `data/processed/silver_labels.csv` for notebook 05. |
 | `04_Extract_Information/extract_information.ipynb` | Structured extraction with a JSON schema, built up in steps: one field from one made-up review; fixed choices, lists and `null` for missing values; aspects with polarity and a word-for-word quote. Applies the full schema to 20 sample reviews, builds one table per review and one per aspect, plots the negative aspects per chain and checks the quotes and the extracted chain against the data. About 25 requests per run. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. Optionally repeat with 30 reviews (15 per chain). |
+| `06_Train_Language_Model/train_language_model.ipynb` | Trains a tiny causal Transformer on 56 Grimm tales with established word-part tokens, validates on 6 held-out tales, applies early stopping, compares generated text, and saves/reloads the best model. Local CPU training; no model API calls. |
 
-### `data/`: Yelp subset
+### `data/`: Yelp subset and book-model files
 
-Only `README.md` and the empty folder placeholders are in git. The data files come from
-Moodle (see [Data](#data)).
+Only `README.md` and the empty folder placeholders are in Git. Yelp files come from
+Moodle (see [Data](#data)); notebook 06 downloads its book separately.
 
 | File | Purpose |
 |---|---|
@@ -282,6 +300,7 @@ Moodle (see [Data](#data)).
 | `fewshot_examples.json` | From Moodle. Three labelled reviews used as few-shot examples in `03_Classify_Reviews` (labels by us). They are not part of any test set. |
 | `raw/` | Place for the full Yelp files, only needed to rebuild the subset. Ignored by git. |
 | `processed/` | Files the notebooks write: the anonymized sample from notebook 01 and the silver labels from notebook 03. Ignored by git. |
+| `book_model/` | Project Gutenberg collection and the best trained model from notebook 06. Ignored by Git. |
 
 ### `scripts/`: data preparation
 
@@ -296,7 +315,7 @@ Moodle (see [Data](#data)).
 ### No hidden helpers
 
 The notebooks show every step directly with existing libraries: pandas, scikit-learn,
-tiktoken, Presidio and the OpenAI library. There is no
+tiktoken, PyTorch, Presidio and the OpenAI library. There is no
 course package to install.
 
 | Task | Where and how |
@@ -305,11 +324,12 @@ course package to install.
 | API key | Codespaces secret `OPENAI_API_KEY`; outside Codespaces `load_dotenv("../.env")` reads it from `.env`. |
 | Remove personal details | Function `anonymize()` defined in notebook 01 with Presidio's `AnalyzerEngine` and `AnonymizerEngine`. English only. |
 | Read a label | `json.loads(r.output_text)["sentiment"]` for JSON answers (notebook 03); cleaned free text for the comparison in notebook 05. |
-| Paths | `DATA = Path("../data")`, relative to the folder of the notebook. |
+| Train a model | `TinyLanguageModel`, the training loop and early stopping are defined directly in notebook 06 with PyTorch. |
+| Paths | Notebooks 01–05 use `DATA = Path("../data")`; notebook 06 detects the repository root and uses `data/book_model/`. |
 
 ### Practice exam and validation
 
-The exam retains the reference format: eight tasks, 40 points (12 concepts, 16 error
+The exam in `07_Example_Exam_Questions` retains the reference format: eight tasks, 40 points (12 concepts, 16 error
 analysis, 12 coding). All tasks and sub-tasks are independent: each faulty
 snippet in part B has its own inputs and exactly one error, each coding task in part C
 has one TODO, and values needed for written answers are given in the task text. Its CSVs and model outcomes are synthetic, and prices are fixed
@@ -366,8 +386,11 @@ check using fake API and Ollama services with the network blocked:
 python scripts/validate_notebooks.py
 ```
 
-This runs real local redaction and uses temporary data. It does not test actual
-hosted-model quality or Ollama performance. `constraints-tested.txt`
+This checks notebooks 01–05 with real local redaction and temporary data. It does
+not train notebook 06 or test actual hosted-model quality or Ollama performance.
+The unit tests above cover notebook 06's tale extraction, token mapping, causal
+attention, learning and best-weight restoration without downloads.
+`constraints-tested.txt`
 records the directly installed dependency versions used for the offline checks on
 Linux/Python 3.11; it is not a complete transitive lock.
 
@@ -380,7 +403,7 @@ Linux/Python 3.11; it is not a complete transitive lock.
 | `.gitignore` | Keeps the key (`.env`), all Yelp data (`data/*.csv`, `data/*.json`, the Moodle zip), the lecture slides (`slides/`), files the notebooks write and Python temporary files out of git. |
 | `pyproject.toml` | Settings of the code checks (Black and pylint). |
 | `constraints-tested.txt` | Direct dependency versions used by the offline validation on Linux/Python 3.11. |
-| `requirements.txt` | Python packages: `openai`, `tiktoken`, `pandas`, `scikit-learn`, Presidio, Jupyter and others. |
+| `requirements.txt` | Python packages: `openai`, `tiktoken`, PyTorch, `pandas`, `scikit-learn`, Presidio, Jupyter and others. |
 | `README.md` | This file. |
 
 Files created while you work, all ignored by git:
@@ -390,9 +413,16 @@ Files created while you work, all ignored by git:
 | `data/processed/reviews_sample.csv` | Anonymized sample of 500 reviews from notebook 01, used in notebooks 03 and 04. |
 | `data/silver_reference.csv` | Prepared sample IDs and silver labels for 40 reviews, included in the Moodle data zip. |
 | `data/processed/silver_labels.csv` | 40 reviews with prepared silver labels from `03_Classify_Reviews`, used in `05_Local_Model`. |
+| `data/book_model/grimm_gutenberg_2591.txt` | Complete English Grimm collection downloaded by notebook 06, including source and licence notices. |
+| `data/book_model/tiny_grimm.pt` | Best trained model from notebook 06, with architecture, tokenizer mapping, tale split and training metadata. |
 
 ## Licence
 
-The data comes from the [Yelp Open Dataset](https://yelp.com/dataset) and is licensed for non-commercial,
+The review data comes from the [Yelp Open Dataset](https://yelp.com/dataset) and is licensed for non-commercial,
 academic use only; it may not be published. That's why it is distributed on Moodle and
 never stored in this repository. See [Data](#data) for the rules.
+
+Notebook 06 uses a separate source: [Project Gutenberg eBook 2591](https://www.gutenberg.org/ebooks/2591).
+The downloaded file retains its source and licence notices. Project Gutenberg
+lists this edition as public domain in the USA and asks users elsewhere to check
+their local rules. The exam data in folder 07 is synthetic.
