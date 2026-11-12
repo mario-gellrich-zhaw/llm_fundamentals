@@ -15,7 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
-NOTEBOOK = ROOT / "07_Train_Language_Model/train_language_model.ipynb"
+NOTEBOOK = ROOT / "06_Train_Language_Model/train_language_model.ipynb"
 
 
 class LanguageModelTests(unittest.TestCase):

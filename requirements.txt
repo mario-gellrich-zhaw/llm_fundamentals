@@ -10,7 +10,7 @@ scikit-learn>=1.5
 matplotlib>=3.8
 tqdm>=4.66
 
-# Train a small language model locally (notebook 07; CPU is sufficient)
+# Train a small language model locally (notebook 06; CPU is sufficient)
 torch>=2.2,<3
 
 # Notebooks

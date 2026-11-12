@@ -166,8 +166,9 @@ review text: keep them private, and clear the outputs before you share a noteboo
 | `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 20 reviews (10 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
 | `04_Extract_Information` | `extract_information.ipynb` | Turn review texts into tables: extract chain, places, type of visit, items, waiting time and aspects with a quote as evidence from 20 reviews (10 per chain), check the quotes and analyse the result | 20 min, plus self-check | depends on API latency |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
-| `06_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
-| `06_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
+| `06_Train_Language_Model` | `train_language_model.ipynb` | Train a tiny Transformer on Grimm tales, inspect validation loss and early stopping, generate text, and save/reload the model | self-study, optional | about 3 min + download |
+| `07_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
+| `07_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
 
 "First run" is the time to run all cells once in a 2-core codespace. Notebooks that call
 the API take about as long on every run, because answers are not saved.
@@ -187,7 +188,7 @@ the sample created in 01, and `05_Local_Model` uses the prepared silver labels s
 
 ## Folder structure
 
-Optional extension: [07 — Train a language model from scratch](07_Train_Language_Model/train_language_model.ipynb)
+Optional extension: [06 — Train a language model from scratch](06_Train_Language_Model/train_language_model.ipynb)
 is a standalone teaching notebook in English. It downloads the English
 [*Grimms' Fairy Tales*](https://www.gutenberg.org/ebooks/2591)
 from Project Gutenberg, holds out every tenth complete tale for validation,
@@ -221,8 +222,8 @@ llm_fundamentals/
 │   └── extract_information.ipynb
 ├── 05_Local_Model/
 │   └── local_model.ipynb
-├── 06_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
-├── 07_Train_Language_Model/  Optional: train a tiny Transformer on a public book
+├── 06_Train_Language_Model/  Optional: train a tiny Transformer on a public book
+├── 07_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
 ├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Yelp subset (from Moodle, not in git)
 │   ├── README.md

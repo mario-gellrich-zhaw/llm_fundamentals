@@ -17,7 +17,7 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Downloaded book and locally trained model from notebook 07
+# Downloaded book and locally trained model from notebook 06
 data/book_model/
 
 # Python

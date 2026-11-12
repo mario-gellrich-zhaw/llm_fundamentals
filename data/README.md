@@ -121,7 +121,7 @@ It never downloads source files.
 
 ## Licence
 
-The optional notebook `07_Train_Language_Model` uses a separate data source:
+The optional notebook `06_Train_Language_Model` uses a separate data source:
 the English collection *Grimms' Fairy Tales*, including **Hansel and Gretel**,
 [Project Gutenberg eBook 2591](https://www.gutenberg.org/ebooks/2591).
 It downloads the complete UTF-8 file (including its source and licence notices)
@@ -135,7 +135,7 @@ The checkpoint contains the weights with the lowest measured validation loss.
 Tokens come from `tiktoken`
 (`cl100k_base`); only training token IDs enter the model vocabulary, with an
 unknown-token fallback for validation. Both files are ignored by Git and can be
-recreated by notebook 07; they are unrelated to the Yelp data and its terms below.
+recreated by notebook 06; they are unrelated to the Yelp data and its terms below.
 
 The Yelp Open Dataset is licensed for non-commercial, academic use, and the data may not
 be displayed or distributed publicly (Yelp Dataset Terms of Use, section 4A). Use the data
