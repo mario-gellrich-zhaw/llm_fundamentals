@@ -238,8 +238,11 @@ the ignored `images/user_supplied/` folder.
 Start by describing the dog photo (`photo_02.jpg`) with “Show what you see!”, then
 ask “How many dogs are visible in this image?” and a question of your own. Select another photo and adapt the object to
 count. Compare each answer with the photo: a fluent description or a confident
-count can still be wrong. A full run sends three independent API requests and
-requires the course key. Image input also uses tokens.
+count can still be wrong. A full run sends three independent API requests with `gpt-6-luna`, the cheapest
+non-deprecated image-capable model by standard token rates, and requires the
+course key. Each answer prints an estimated USD cost from reported usage,
+including image input, cached input and reasoning output. Rates are dated
+12 November 2026; 2,000 uncached input plus 150 output tokens cost about $0.000275.
 
 Use only photos you may share and that contain no personal information. Photos
 in `images/` become public when pushed to a public fork. Clear notebook outputs
@@ -315,7 +318,7 @@ llm_fundamentals/
 | `04_Extract_Information/extract_information.ipynb` | Structured extraction with a JSON schema, built up in steps: one field from one made-up review; fixed choices, lists and `null` for missing values; aspects with polarity and a word-for-word quote. Applies the full schema to 20 sample reviews, builds one table per review and one per aspect, plots the negative aspects per chain and checks the quotes and the extracted chain against the data. About 25 requests per run. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. Optionally repeat with 30 reviews (15 per chain). |
 | `06_Train_Language_Model/train_language_model.ipynb` | Trains a tiny causal Transformer on 56 Grimm tales with established word-part tokens, validates on 6 held-out tales, applies early stopping, compares generated text, and saves/reloads the best model. Local CPU training; no model API calls. |
-| `07_Multimodal_Prompting/multimodal_prompting.ipynb` | Uses general free-text prompts to describe a selected photo, count objects and answer a visual question. Three independent API requests per run; manual comparison and a second-photo experiment. Works from the notebook folder or repo root; no Yelp data needed. |
+| `07_Multimodal_Prompting/multimodal_prompting.ipynb` | Uses general free-text prompts to describe a selected photo, count objects and answer a visual question. Three independent `gpt-6-luna` API requests per run, each with a usage-based USD estimate; manual comparison and a second-photo experiment. Works from the notebook folder or repo root; no Yelp data needed. |
 
 ### `data/`: Yelp subset and book-model files
 

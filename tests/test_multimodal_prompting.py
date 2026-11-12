@@ -37,9 +37,27 @@ class MultimodalTests(unittest.TestCase):
                     side_effect=[
                         SimpleNamespace(
                             output_text="A white dog resting outdoors.",
-                            usage=None,
+                            usage=SimpleNamespace(
+                                input_tokens=2000,
+                                input_tokens_details=SimpleNamespace(
+                                    cached_tokens=500
+                                ),
+                                output_tokens=150,
+                                output_tokens_details=SimpleNamespace(
+                                    reasoning_tokens=40
+                                ),
+                            ),
                         ),
-                        SimpleNamespace(output_text="One dog.", usage=None),
+                        SimpleNamespace(
+                            output_text="One dog.",
+                            usage=SimpleNamespace(
+                                input_tokens=800,
+                                input_tokens_details=SimpleNamespace(
+                                    cached_tokens=0
+                                ),
+                                output_tokens=20,
+                            ),
+                        ),
                         SimpleNamespace(
                             output_text="A dog and driftwood.",
                             usage=None,
@@ -65,7 +83,7 @@ class MultimodalTests(unittest.TestCase):
                             patch("openai.OpenAI", return_value=fake_client),
                             patch("IPython.display.display"),
                             patch("dotenv.load_dotenv"),
-                            contextlib.redirect_stdout(io.StringIO()),
+                            contextlib.redirect_stdout(io.StringIO()) as output,
                         ):
                             namespace = {}
                             for source in cells:
@@ -82,6 +100,8 @@ class MultimodalTests(unittest.TestCase):
                 self.assertEqual(len(calls), 3)
                 for call in calls:
                     self.assertIs(call["store"], False)
+                    self.assertEqual(call["model"], "gpt-6-luna")
+                    self.assertEqual(call["service_tier"], "default")
                     content = call["input"][0]["content"]
                     self.assertEqual(content[0]["type"], "input_text")
                     image = content[1]
@@ -105,6 +125,10 @@ class MultimodalTests(unittest.TestCase):
                 )
                 self.assertTrue(all("text" not in call for call in calls))
                 self.assertEqual(namespace["count_answer"], "One dog.")
+                # Reasoning is already included in total output tokens.
+                self.assertIn("USD 0.00023000", output.getvalue())
+                self.assertIn("USD 0.00009000", output.getvalue())
+                self.assertIn("Cost estimate unavailable", output.getvalue())
 
     def test_missing_photo_stops_before_api_client_creation(self):
         """An empty image folder must give actionable guidance without a key."""
