@@ -36,7 +36,7 @@ class MultimodalTests(unittest.TestCase):
                 create = Mock(
                     side_effect=[
                         SimpleNamespace(
-                            output_text="A white dog resting outdoors.",
+                            output_text="A dog yawning.",
                             usage=SimpleNamespace(
                                 input_tokens=2000,
                                 input_tokens_details=SimpleNamespace(
@@ -59,7 +59,7 @@ class MultimodalTests(unittest.TestCase):
                             ),
                         ),
                         SimpleNamespace(
-                            output_text="A dog and driftwood.",
+                            output_text="A dog in the foreground.",
                             usage=None,
                         ),
                     ]

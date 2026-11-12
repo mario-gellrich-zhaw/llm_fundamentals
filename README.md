@@ -229,9 +229,9 @@ Both files are ignored by Git.
 
 [Notebook 07](07_Multimodal_Prompting/multimodal_prompting.ipynb) combines an image
 with a text prompt. Three photos in `07_Multimodal_Prompting/images/` show horses,
-a white dog resting outdoors and city buildings in the mist. You can add JPG/JPEG, PNG
-or WEBP photos; convert HEIC first. The bundled examples are CC0 or dedicated to
-the public domain by their authors; [sources and rights](07_Multimodal_Prompting/images/README.md)
+a yawning dog and a sailing ship in Sète harbour. You can add JPG/JPEG, PNG
+or WEBP photos; convert HEIC first. The horse photo is public domain, the dog photo is CC0, and the harbour photo
+is CC BY 4.0 (Christian Ferrer; attribution required); [sources and rights](07_Multimodal_Prompting/images/README.md)
 are recorded per image. Original user-supplied photos are preserved locally in
 the ignored `images/user_supplied/` folder.
 
@@ -271,7 +271,7 @@ llm_fundamentals/
 │   └── train_language_model.ipynb
 ├── 07_Multimodal_Prompting/  Optional: text and image input
 │   ├── multimodal_prompting.ipynb
-│   └── images/              Three CC0/public-domain course photos
+│   └── images/              Three freely reusable course photos
 ├── 08_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
 ├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Private Yelp data and downloaded book/model files
