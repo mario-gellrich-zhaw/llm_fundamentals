@@ -17,6 +17,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# Downloaded book and locally trained model from notebook 07
+data/book_model/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -187,6 +187,24 @@ the sample created in 01, and `05_Local_Model` uses the prepared silver labels s
 
 ## Folder structure
 
+Optional extension: [07 — Train a language model from scratch](07_Train_Language_Model/train_language_model.ipynb)
+is a standalone teaching notebook in English. It downloads the English
+[*Grimms' Fairy Tales*](https://www.gutenberg.org/ebooks/2591)
+from Project Gutenberg, holds out every tenth complete tale for validation,
+and trains a tiny causal Transformer with random initial weights on established
+`tiktoken` word-part tokens (`cl100k_base`), using a compact model vocabulary built
+only from the training tales. Compare generated text before and after training,
+inspect training and validation loss, and save/reload your own model. This is a
+small language model, not a capable chatbot. No API key, Yelp data, pretrained
+weights or GPU are needed. PyTorch is included in the root `requirements.txt`;
+no separate installation is needed after the normal course setup.
+Runtime depends on the CPU; the notebook reports elapsed time.
+Early stopping restores the checkpoint with the lowest validation loss;
+training ends after three checks without improvement or 600 updates.
+The downloaded book and generated checkpoint stay in `data/book_model/`, outside
+Git. The first run needs internet access for the book and tokenizer data; later runs
+reuse cached files.
+
 ```
 llm_fundamentals/
 ├── .devcontainer/            Codespace configuration
@@ -204,6 +222,7 @@ llm_fundamentals/
 ├── 05_Local_Model/
 │   └── local_model.ipynb
 ├── 06_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
+├── 07_Train_Language_Model/  Optional: train a tiny Transformer on a public book
 ├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Yelp subset (from Moodle, not in git)
 │   ├── README.md
