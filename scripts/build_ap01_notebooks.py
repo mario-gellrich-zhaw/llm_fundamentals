@@ -42,7 +42,7 @@ from code_style import format_code
 from exam_metrics import exam_statistics
 from jupyter_client.manager import start_new_kernel
 
-AP = Path(__file__).resolve().parents[1] / "07_Example_Exam_Questions"
+AP = Path(__file__).resolve().parents[1] / "08_Example_Exam_Questions"
 TASKS_NB = AP / "AP01_Large_Language_Models_Aufgaben.ipynb"
 SOLUTION_NB = AP / "AP01_Large_Language_Models_Musterloesung.ipynb"
 STATS = exam_statistics(AP)
@@ -196,7 +196,7 @@ DATA_NOTES = render(
         "1 Million Output-Tokens. Das lokale Modell verursacht keine "
         "API-Kosten.\n"
         "\n"
-        "Das Notebook kann im Ordner `07_Example_Exam_Questions` oder im "
+        "Das Notebook kann im Ordner `08_Example_Exam_Questions` oder im "
         "Repository-Stamm gestartet werden."
     )
 )
@@ -220,7 +220,7 @@ SETUP_CODE = [
     "# Den Datenordner vom aktuellen Arbeitsverzeichnis aus bestimmen.\n"
     "EXAM_DIR = Path.cwd()\n"
     "if not (EXAM_DIR / 'reviews.csv').exists():\n"
-    "    EXAM_DIR = EXAM_DIR / '07_Example_Exam_Questions'\n"
+    "    EXAM_DIR = EXAM_DIR / '08_Example_Exam_Questions'\n"
     "\n"
     "# Die Review-Tabelle aus dem Datenordner lesen.\n"
     "df = pd.read_csv(EXAM_DIR / 'reviews.csv')\n"

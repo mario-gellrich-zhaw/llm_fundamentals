@@ -14,7 +14,7 @@ import pandas as pd
 import tiktoken
 from exam_settings import PROMPT_TOKENS
 
-OUT = Path(__file__).resolve().parents[1] / "07_Example_Exam_Questions"
+OUT = Path(__file__).resolve().parents[1] / "08_Example_Exam_Questions"
 rng = np.random.default_rng(2026)
 enc = tiktoken.get_encoding("o200k_base")
 

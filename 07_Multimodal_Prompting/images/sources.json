@@ -1,0 +1,44 @@
+[
+  {
+    "file": "photo_01.jpg",
+    "title": "Wild horses in a meadow (Unsplash)",
+    "author": "Bethany Legg (bkotynski)",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Wild_horses_in_a_meadow_(Unsplash).jpg",
+    "source_revision": "https://commons.wikimedia.org/w/index.php?title=File:Wild_horses_in_a_meadow_(Unsplash).jpg&oldid=1244324490",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Wild_horses_in_a_meadow_%28Unsplash%29.jpg/1280px-Wild_horses_in_a_meadow_%28Unsplash%29.jpg",
+    "rights": "CC0 1.0 Universal",
+    "rights_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "rights_basis": "File-specific licensing section identifies the photo as a pre-June-2017 Unsplash image released under CC0.",
+    "changes": "Downloaded the Wikimedia 1280-pixel preview; no further changes.",
+    "retrieved_on": "2026-11-12",
+    "sha256": "bb0c42d4df87c5e31fcfe2c3de79eb9c9a9dc18910bf95ccc7a7a78d2b357aff"
+  },
+  {
+    "file": "photo_02.jpg",
+    "title": "BeachDog2",
+    "author": "Ravello 99 (English Wikipedia); current version by Soerfm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:BeachDog2.jpg",
+    "source_revision": "https://commons.wikimedia.org/w/index.php?title=File:BeachDog2.jpg&oldid=1037212100",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/a/a8/BeachDog2.jpg",
+    "rights": "Public domain dedication by the author (PD-user)",
+    "rights_url": "https://commons.wikimedia.org/wiki/File:BeachDog2.jpg",
+    "rights_basis": "File-specific permission section states that Ravello 99 released the work into the public domain worldwide, with a fallback grant for use for any purpose.",
+    "changes": "Current Wikimedia file downloaded unchanged; source history records crop, levels and sharpness adjustments by Soerfm.",
+    "retrieved_on": "2026-11-12",
+    "sha256": "786ba3d992ece522c1e66ac16b0276693189e9bbba18daca3d4ac2c68c8cc115"
+  },
+  {
+    "file": "photo_03.jpg",
+    "title": "City Skyline Urban Skyscrapers (Unsplash)",
+    "author": "Anthony DELANOIX (anthonydelanoix)",
+    "source_page": "https://commons.wikimedia.org/wiki/File:City_Skyline_Urban_Skyscrapers_(Unsplash).jpg",
+    "source_revision": "https://commons.wikimedia.org/w/index.php?title=File:City_Skyline_Urban_Skyscrapers_(Unsplash).jpg&oldid=1126190764",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/City_Skyline_Urban_Skyscrapers_%28Unsplash%29.jpg/1280px-City_Skyline_Urban_Skyscrapers_%28Unsplash%29.jpg",
+    "rights": "CC0 1.0 Universal",
+    "rights_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "rights_basis": "File-specific licensing section identifies the photo as a pre-June-2017 Unsplash image released under CC0.",
+    "changes": "Downloaded the Wikimedia 1280-pixel preview; no further changes.",
+    "retrieved_on": "2026-11-12",
+    "sha256": "28f595a002c72bfd2808f189ab78e0ca41ba0776cf5d5d00ad14c5a929834ad0"
+  }
+]

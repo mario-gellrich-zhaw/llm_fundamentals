@@ -8,8 +8,10 @@ a small language model from scratch.
 
 The data-preparation notebook and four LLM exercises use real IKEA and McDonald's reviews from the
 [Yelp Open Dataset](https://yelp.com/dataset). Notebook 06 trains locally on English
-Grimm tales downloaded from Project Gutenberg. The practice exam in folder 07 uses
-synthetic data and simulated model results. Neither 06 nor 07 needs an API key or
+Grimm tales downloaded from Project Gutenberg. The optional multimodal example in
+folder 07 uses photos for description, counting and visual questions. The practice
+exam in folder 08 uses synthetic data and simulated model results. Neither 06 nor
+08 needs an API key or
 the Yelp download.
 
 ## Getting started
@@ -31,7 +33,10 @@ the Yelp download.
    03–05 use. In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
    run the first question to check that the API connection works.
 7. Optional: open [06_Train_Language_Model/train_language_model.ipynb](06_Train_Language_Model/train_language_model.ipynb)
-   to train your own small model. Use folder `07_Example_Exam_Questions` for the
+   to train your own small model. For image input, put photos in
+   `07_Multimodal_Prompting/images` and open
+   [07_Multimodal_Prompting/multimodal_prompting.ipynb](07_Multimodal_Prompting/multimodal_prompting.ipynb).
+   Use folder `08_Example_Exam_Questions` for the
    practice exam and concept checks.
 
 ### API key
@@ -111,7 +116,7 @@ Updating an existing course copy? Use the updated Moodle zip containing
 anonymized sample and silver labels with both chains for notebooks 04 and 05.
 
 Notebook 06 downloads its own book data on the first run and stores it in
-`data/book_model/`. Folder 07 already includes its synthetic exam CSVs.
+`data/book_model/`. Folder 08 already includes its synthetic exam CSVs.
 
 Rules for the data:
 
@@ -176,8 +181,9 @@ review text: keep them private, and clear the outputs before you share a noteboo
 | `04_Extract_Information` | `extract_information.ipynb` | Turn review texts into tables: extract chain, places, type of visit, items, waiting time and aspects with a quote as evidence from 20 reviews (10 per chain), check the quotes and analyse the result | 20 min, plus self-check | depends on API latency |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
 | `06_Train_Language_Model` | `train_language_model.ipynb` | Train a tiny Transformer on Grimm tales, inspect validation loss and early stopping, generate text, and save/reload the model | self-study, optional | about 3 min + download |
-| `07_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
-| `07_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
+| `07_Multimodal_Prompting` | `multimodal_prompting.ipynb` | Describe a photo, count objects and ask a visual question | about 5 min, optional | depends on API latency |
+| `08_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
+| `08_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
 
 "First run" is the time to run all cells once in a 2-core codespace. Notebooks that call
 the API take about as long on every run, because answers are not saved.
@@ -219,6 +225,27 @@ IDs stay in memory. The best model is saved as `data/book_model/tiny_grimm.pt`,
 including tokenizer mapping, configuration, tale split and best-step metadata.
 Both files are ignored by Git.
 
+### 07: Ask questions about photos
+
+[Notebook 07](07_Multimodal_Prompting/multimodal_prompting.ipynb) combines an image
+with a text prompt. Three photos in `07_Multimodal_Prompting/images/` show horses,
+a white dog resting outdoors and city buildings in the mist. You can add JPG/JPEG, PNG
+or WEBP photos; convert HEIC first. The bundled examples are CC0 or dedicated to
+the public domain by their authors; [sources and rights](07_Multimodal_Prompting/images/README.md)
+are recorded per image. Original user-supplied photos are preserved locally in
+the ignored `images/user_supplied/` folder.
+
+Start by describing the dog photo (`photo_02.jpg`) with “Show what you see!”, then
+ask “How many dogs are visible in this image?” and a question of your own. Select another photo and adapt the object to
+count. Compare each answer with the photo: a fluent description or a confident
+count can still be wrong. A full run sends three independent API requests and
+requires the course key. Image input also uses tokens.
+
+Use only photos you may share and that contain no personal information. Photos
+in `images/` become public when pushed to a public fork. Clear notebook outputs
+before sharing. Notebook 07 is independent of the Yelp workflow and does not
+anonymize images automatically.
+
 ## Folder structure
 
 ```
@@ -239,7 +266,10 @@ llm_fundamentals/
 │   └── local_model.ipynb
 ├── 06_Train_Language_Model/  Optional: train a tiny Transformer on a public book
 │   └── train_language_model.ipynb
-├── 07_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
+├── 07_Multimodal_Prompting/  Optional: text and image input
+│   ├── multimodal_prompting.ipynb
+│   └── images/              Three CC0/public-domain course photos
+├── 08_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
 ├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Private Yelp data and downloaded book/model files
 │   ├── README.md
@@ -285,6 +315,7 @@ llm_fundamentals/
 | `04_Extract_Information/extract_information.ipynb` | Structured extraction with a JSON schema, built up in steps: one field from one made-up review; fixed choices, lists and `null` for missing values; aspects with polarity and a word-for-word quote. Applies the full schema to 20 sample reviews, builds one table per review and one per aspect, plots the negative aspects per chain and checks the quotes and the extracted chain against the data. About 25 requests per run. |
 | `05_Local_Model/local_model.ipynb` | Starts Ollama and downloads a small open-weight model (`qwen3:1.7b`), points the OpenAI library to `localhost:11434/v1`, classifies the same 10 reviews with the local model and with `gpt-6-luna`, and compares accuracy against the silver labels, seconds per review and API cost. Optionally repeat with 30 reviews (15 per chain). |
 | `06_Train_Language_Model/train_language_model.ipynb` | Trains a tiny causal Transformer on 56 Grimm tales with established word-part tokens, validates on 6 held-out tales, applies early stopping, compares generated text, and saves/reloads the best model. Local CPU training; no model API calls. |
+| `07_Multimodal_Prompting/multimodal_prompting.ipynb` | Uses general free-text prompts to describe a selected photo, count objects and answer a visual question. Three independent API requests per run; manual comparison and a second-photo experiment. Works from the notebook folder or repo root; no Yelp data needed. |
 
 ### `data/`: Yelp subset and book-model files
 
@@ -329,7 +360,7 @@ course package to install.
 
 ### Practice exam and validation
 
-The exam in `07_Example_Exam_Questions` retains the reference format: eight tasks, 40 points (12 concepts, 16 error
+The exam in `08_Example_Exam_Questions` retains the reference format: eight tasks, 40 points (12 concepts, 16 error
 analysis, 12 coding). All tasks and sub-tasks are independent: each faulty
 snippet in part B has its own inputs and exactly one error, each coding task in part C
 has one TODO, and values needed for written answers are given in the task text. Its CSVs and model outcomes are synthetic, and prices are fixed
@@ -389,7 +420,9 @@ python scripts/validate_notebooks.py
 This checks notebooks 01–05 with real local redaction and temporary data. It does
 not train notebook 06 or test actual hosted-model quality or Ollama performance.
 The unit tests above cover notebook 06's tale extraction, token mapping, causal
-attention, learning and best-weight restoration without downloads.
+attention, learning and best-weight restoration without downloads. They also check
+notebook 07 with a temporary image and fake API responses, including the selected
+image bytes in all three requests and the guidance when photos are missing.
 `constraints-tested.txt`
 records the directly installed dependency versions used for the offline checks on
 Linux/Python 3.11; it is not a complete transitive lock.
@@ -425,4 +458,4 @@ never stored in this repository. See [Data](#data) for the rules.
 Notebook 06 uses a separate source: [Project Gutenberg eBook 2591](https://www.gutenberg.org/ebooks/2591).
 The downloaded file retains its source and licence notices. Project Gutenberg
 lists this edition as public domain in the USA and asks users elsewhere to check
-their local rules. The exam data in folder 07 is synthetic.
+their local rules. The exam data in folder 08 is synthetic.
