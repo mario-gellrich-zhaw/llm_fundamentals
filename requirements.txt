@@ -10,7 +10,9 @@ scikit-learn>=1.5
 matplotlib>=3.8
 tqdm>=4.66
 
-# Train a small language model locally (notebook 06; CPU is sufficient)
+# Train a small language model locally (notebook 06; CPU is sufficient).
+# Install the CPU build first (see README / post_create.sh) to avoid the
+# multi-GB CUDA packages; this line then finds torch already installed.
 torch>=2.2,<3
 
 # Notebooks

@@ -4,6 +4,9 @@ set -euo pipefail
 
 echo ">>> Installing Python packages"
 python -m pip install --upgrade pip
+# The default PyPI torch bundles ~4 GB of CUDA libraries; there is no GPU here.
+pip install "torch>=2.2,<3" -c constraints-tested.txt \
+    --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt -c constraints-tested.txt
 
 echo ">>> Installing the local English privacy model"

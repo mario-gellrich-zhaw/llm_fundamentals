@@ -3,16 +3,12 @@
 Exercises for **Week 10 of the module «Data Science»** (MSc, ZHAW School of Management and Law).
 You will work with a large language model through its API: count tokens and estimate
 costs, write and evaluate prompts, extract structured information from review texts and
-compare an API model with a local open-weight model. An optional exercise trains
+compare an API model with a local open-weight model. Additionally, you will train
 a small language model from scratch.
 
 The data-preparation notebook and four LLM exercises use real IKEA and McDonald's reviews from the
 [Yelp Open Dataset](https://yelp.com/dataset). Notebook 06 trains locally on English
-Grimm tales downloaded from Project Gutenberg. The optional multimodal example in
-folder 07 uses photos for description, counting and visual questions. The practice
-exam in folder 08 uses synthetic data and simulated model results. Neither 06 nor
-08 needs an API key or
-the Yelp download.
+Grimm tales downloaded from Project Gutenberg. Notebook 07 includes multimodal examples using photos for description, counting and visual questions. Notebook 08 is the practice exam using synthetic data and simulated model results. Notebooks 06 and 08 need neither an API key nor the Yelp download; notebook 07 needs the API key but not the Yelp download.
 
 ## Getting started
 
@@ -32,12 +28,12 @@ the Yelp download.
    to the end. Its last part creates the anonymized sample of 500 reviews (250 per chain) that notebooks
    03–05 use. In [02_Chat_Loop_Tokens/chat_loop_tokens.ipynb](02_Chat_Loop_Tokens/chat_loop_tokens.ipynb),
    run the first question to check that the API connection works.
-7. Optional: open [06_Train_Language_Model/train_language_model.ipynb](06_Train_Language_Model/train_language_model.ipynb)
+7. Complete the mandatory exercises: open [06_Train_Language_Model/train_language_model.ipynb](06_Train_Language_Model/train_language_model.ipynb)
    to train your own small model. For image input, put photos in
    `07_Multimodal_Prompting/images` and open
    [07_Multimodal_Prompting/multimodal_prompting.ipynb](07_Multimodal_Prompting/multimodal_prompting.ipynb).
    Use folder `08_Example_Exam_Questions` for the
-   practice exam and concept checks.
+   mandatory practice exam and concept checks.
 
 ### API key
 
@@ -132,6 +128,7 @@ From the repository root, with Python 3.11 or later:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install "torch>=2.2,<3" -c constraints-tested.txt --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements.txt -c constraints-tested.txt
 python -m spacy download en_core_web_sm
 cp -n .env.example .env
@@ -142,7 +139,7 @@ Codespaces runs the package and privacy-model installation automatically; rebuil
 existing Codespace or run the installation commands after updating the course.
 Notebooks 01–05 read data from `../data`, so run them from their own folder (the
 default in VS Code). Notebook 06 and the exam setup also work from the repository root.
-The optional Ollama cells require a Linux/macOS shell; the supplied Codespace is Linux.
+The Ollama cells require a Linux/macOS shell; the supplied Codespace is Linux.
 
 ### Anonymization before the API
 
@@ -180,10 +177,10 @@ review text: keep them private, and clear the outputs before you share a noteboo
 | `03_Classify_Reviews` | `classify_reviews.ipynb` | Label 20 reviews (10 per chain), compare two predefined prompts, check correctness, consistency and hard cases, then try injection on one review with and without a defence | 20 + 5 min, plus 5 min self-check | depends on API latency |
 | `04_Extract_Information` | `extract_information.ipynb` | Turn review texts into tables: extract chain, places, type of visit, items, waiting time and aspects with a quote as evidence from 20 reviews (10 per chain), check the quotes and analyse the result | 20 min, plus self-check | depends on API latency |
 | `05_Local_Model` | `local_model.ipynb` | Run a small local model with Ollama and compare accuracy, speed and cost with the API model on 10 reviews (5 per chain) | 15 min, at home | about 2 min + model download |
-| `06_Train_Language_Model` | `train_language_model.ipynb` | Train a tiny Transformer on Grimm tales, inspect validation loss and early stopping, generate text, and save/reload the model | self-study, optional | about 3 min + download |
-| `07_Multimodal_Prompting` | `multimodal_prompting.ipynb` | Describe a photo, count objects and ask a visual question | about 5 min, optional | depends on API latency |
-| `08_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study | seconds |
-| `08_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study | – |
+| `06_Train_Language_Model` | `train_language_model.ipynb` | Train a tiny Transformer on Grimm tales, inspect validation loss and early stopping, generate text, and save/reload the model | self-study, mandatory | about 3 min + download |
+| `07_Multimodal_Prompting` | `multimodal_prompting.ipynb` | Describe a photo, count objects and ask a visual question | about 5 min, mandatory | depends on API latency |
+| `08_Example_Exam_Questions` | `AP01_Large_Language_Models_Aufgaben.ipynb` | Offline 40-point practice exam; compare with `AP01_Large_Language_Models_Musterloesung.ipynb` | self-study, mandatory | seconds |
+| `08_Example_Exam_Questions` | `Lecture_Concept_Fragen_und_Antworten.ipynb` | Additional ungraded questions with suggested answers on the remaining lecture topics | self-study, mandatory | – |
 
 "First run" is the time to run all cells once in a 2-core codespace. Notebooks that call
 the API take about as long on every run, because answers are not saved.
@@ -215,7 +212,8 @@ improvement or 600 updates, and restores the best weights. Compare formatted tex
 before and after training, inspect learning curves, and save/reload the model.
 This demonstrates language-model training; it is too small for reliable answers.
 
-PyTorch is included in the normal installation. No API key, Yelp data, pretrained
+PyTorch is included in the normal installation, as the CPU-only build (about 4 GB
+smaller than the default CUDA build). No API key, Yelp data, pretrained
 model weights or GPU are needed. The first run downloads the collection and
 tokenizer data; later runs reuse cached files. A full run took about 3 minutes on
 the course CPU setup; actual runtime is printed by the notebook.
@@ -267,12 +265,12 @@ llm_fundamentals/
 │   └── extract_information.ipynb
 ├── 05_Local_Model/
 │   └── local_model.ipynb
-├── 06_Train_Language_Model/  Optional: train a tiny Transformer on a public book
+├── 06_Train_Language_Model/  Train a tiny Transformer on a public book
 │   └── train_language_model.ipynb
-├── 07_Multimodal_Prompting/  Optional: text and image input
+├── 07_Multimodal_Prompting/  Text and image input
 │   ├── multimodal_prompting.ipynb
 │   └── images/              Three freely reusable course photos
-├── 08_Example_Exam_Questions/ # Offline exam, solutions, concept checks and synthetic CSVs
+├── 08_Example_Exam_Questions/ Mandatory offline exam, solutions, concept checks and synthetic CSVs
 ├── tests/                    Offline checks: notebook cells and the practice exam
 ├── data/                     Private Yelp data and downloaded book/model files
 │   ├── README.md
